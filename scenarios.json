@@ -1,0 +1,264 @@
+{
+ "scenarios": [
+  {
+   "query": "Blood pump shows A.11 and won't get up to speed",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    47
+   ],
+   "origin": "Manual: Pump is not reaching speed",
+   "example": true
+  },
+  {
+   "query": "Blood pump rotor spinning backwards, code A.13",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    47
+   ],
+   "origin": "Manual: turning in the wrong",
+   "example": false
+  },
+  {
+   "query": "Blood pump display shows E.07 after power on, machine 12V looks low",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    48
+   ],
+   "origin": "Manual: + 12 volts is outside the allowable",
+   "example": true
+  },
+  {
+   "query": "E.04 on the blood pump module, only clears by power cycling",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    48
+   ],
+   "origin": "Manual: Reference Voltage error",
+   "example": false
+  },
+  {
+   "query": "Level up key pressed and arterial pressure shoots up, A.25",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    47
+   ],
+   "origin": "Manual: Pressure increases too quickly",
+   "example": false
+  },
+  {
+   "query": "Blood pump tach error A.24, speed reading unstable",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    47
+   ],
+   "origin": "Manual: Optical sensor frequency",
+   "example": false
+  },
+  {
+   "query": "Rotor moves on first revolution when stopped, A.29",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    48,
+    49
+   ],
+   "origin": "Manual: Pump rotor turning when it should",
+   "example": false
+  },
+  {
+   "query": "Machine shows No Water message and heater turns off",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    13
+   ],
+   "origin": "Manual: No Water",
+   "example": true
+  },
+  {
+   "query": "High Flow Error displayed during treatment",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    13
+   ],
+   "origin": "Manual: High Flow Error",
+   "example": false
+  },
+  {
+   "query": "Flow Inlet Error, float switch not seeing low level",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    13
+   ],
+   "origin": "Manual: Flow Inlet Error",
+   "example": false
+  },
+  {
+   "query": "Fill Program Alarm stays on with blood sensed",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    13,
+    35,
+    37,
+    38,
+    39
+   ],
+   "origin": "Manual: Fill Program",
+   "example": false
+  },
+  {
+   "query": "Power failure alarm weak, which battery and how is it tested",
+   "model": "2008T",
+   "expect_doc": "490130-H",
+   "expect_pages": [
+    25,
+    37,
+    41
+   ],
+   "origin": "Manual: 9 Volt Battery",
+   "example": false,
+   "also": [
+    {
+     "doc": "508033-S",
+     "pages": [
+      22
+     ]
+    }
+   ]
+  },
+  {
+   "query": "Replaced the functional board with a new EEPROM, which calibrations are needed?",
+   "model": "2008T",
+   "expect_doc": "508032-H",
+   "expect_pages": [
+    15
+   ],
+   "origin": "Manual: Functional Board (New EEPROM)",
+   "example": true
+  },
+  {
+   "query": "How do I calibrate the UF pump volume",
+   "model": "2008T",
+   "expect_doc": "508032-H",
+   "expect_pages": [
+    30,
+    31,
+    32
+   ],
+   "origin": "Manual: UF Pump Volume screen button",
+   "example": false
+  },
+  {
+   "query": "Loading pressure gauge on red rinse port keeps cycling during deaeration calibration",
+   "model": "2008T",
+   "expect_doc": "508032-H",
+   "expect_pages": [
+    20
+   ],
+   "origin": "Manual: loading pressure gauge in the red RINSE port",
+   "example": false
+  },
+  {
+   "query": "Annual PM: acceptable range for inlet water pressure regulator",
+   "model": "2008T",
+   "expect_doc": "508033-S",
+   "expect_pages": [
+    30,
+    67
+   ],
+   "origin": "Manual: Check Inlet Water Pressure Regulator",
+   "example": false
+  },
+  {
+   "query": "Annual PM conductivity check tolerance against external meter",
+   "model": "2008T",
+   "expect_doc": "508033-S",
+   "expect_pages": [
+    18,
+    65,
+    67
+   ],
+   "origin": "Manual: Check Conductivity Calibration",
+   "example": false
+  },
+  {
+   "query": "When do deaeration motor brushes need replacing",
+   "model": "2008T",
+   "expect_doc": "508033-S",
+   "expect_pages": [
+    67
+   ],
+   "origin": "Manual: Replace Deaeration Motor Brushes",
+   "example": false
+  },
+  {
+   "query": "2008K2 shows Air Detector Alarm, venous chamber level looks low",
+   "model": "2008K2",
+   "expect_doc": "490136-K",
+   "expect_pages": [
+    149
+   ],
+   "origin": "Manual: The level of blood in the venous drip",
+   "example": true
+  },
+  {
+   "query": "Actuator BD no Echo on startup",
+   "model": "2008K2",
+   "expect_doc": "490136-K",
+   "expect_pages": [
+    148
+   ],
+   "origin": "Manual: Actuator BD no Echo",
+   "example": false
+  },
+  {
+   "query": "Blood leak test keeps failing during pressure holding tests",
+   "model": "2008K2",
+   "expect_doc": "490136-K",
+   "expect_pages": [
+    164
+   ],
+   "origin": "Manual: Blood Leak test has failed",
+   "example": false
+  },
+  {
+   "query": "5 Minutes Flow Off warning keeps coming up",
+   "model": "2008K2",
+   "expect_doc": "490136-K",
+   "expect_pages": [
+    145
+   ],
+   "origin": "Manual: Dialysate flow has been off for five",
+   "example": false
+  },
+  {
+   "query": "Get Neg TMP test failed",
+   "model": "2008K2",
+   "expect_doc": "490136-K",
+   "expect_pages": [
+    164
+   ],
+   "origin": "Manual: Get Neg TMP test has failed",
+   "example": false
+  },
+  {
+   "query": "How do I replace the power failure alarm battery on the 2008K2",
+   "model": "2008K2",
+   "expect_doc": "490136-K",
+   "expect_pages": [
+    139
+   ],
+   "origin": "Manual: Power Failure Alarm",
+   "example": false
+  }
+ ]
+}

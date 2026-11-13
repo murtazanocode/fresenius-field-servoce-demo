@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Field Service Assistant</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&display=swap">
+<style>
+.keybox { display: inline-flex; gap: 6px; align-items: center; }
+.keybox input { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: inherit; width: 140px; }
+/* Layout: one working column like a service tablet; a tab strip switches Ask / Library / Revisions / Test set. */
+:root {
+  --bg: #f3f5f6;
+  --panel: #ffffff;
+  --ink: #16212a;
+  --muted: #5b6b77;
+  --line: #d9e0e5;
+  --accent: #1f5f8b;
+  --accent-soft: #e3eef6;
+  --ok: #1d7a4e;
+  --ok-soft: #e1f2e9;
+  --warn: #9a5b00;
+  --warn-soft: #fbefd9;
+  --bad: #a3322b;
+  --bad-soft: #f8e3e1;
+  --mark: #fff0a8;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1519; --panel: #172026; --ink: #e4ebf0; --muted: #93a3ae; --line: #2a3640;
+  --accent: #7fb6dd; --accent-soft: #1b3142; --ok: #6fcf9c; --ok-soft: #173327;
+  --warn: #f0b45a; --warn-soft: #3a2c14; --bad: #f08a80; --bad-soft: #3a1d1b; --mark: #5c4f12;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1519; --panel: #172026; --ink: #e4ebf0; --muted: #93a3ae; --line: #2a3640;
+  --accent: #7fb6dd; --accent-soft: #1b3142; --ok: #6fcf9c; --ok-soft: #173327;
+  --warn: #f0b45a; --warn-soft: #3a2c14; --bad: #f08a80; --bad-soft: #3a1d1b; --mark: #5c4f12;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { font: 600 1.7rem/1.1 var(--f-display); letter-spacing: .01em; margin: 0; text-wrap: balance }
+.sub { color: var(--muted); font-size: .85rem; margin: 4px 0 0 }
+.mono { font-family: var(--f-mono); font-size: .82em }
+nav { display: flex; gap: 4px; margin: 18px 0 16px; border-bottom: 1px solid var(--line); overflow-x: auto }
+nav a { padding: 8px 12px; color: var(--muted); text-decoration: none; font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap }
+nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent) }
+nav a:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+section[data-view] { display: grid; gap: 16px }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px }
+label.lbl { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; font-weight: 600 }
+.ask-row { display: grid; grid-template-columns: 160px 1fr; gap: 12px }
+@media (max-width: 560px) { .ask-row { grid-template-columns: 1fr } }
+select, textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px }
+textarea { min-height: 64px; resize: vertical }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px }
+button { font: 500 .9rem var(--f-body); border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink) }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel) }
+button:disabled { opacity: .55; cursor: default }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px }
+.chip { text-align: left; font-size: .8rem; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted) }
+.chip:hover { color: var(--ink); border-color: var(--accent) }
+.mode { font-size: .8rem; color: var(--muted) }
+.status-line { font-size: .85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px }
+.cause { display: grid; grid-template-columns: 34px 1fr; gap: 0 12px }
+.rank { font: 600 1.3rem/1 var(--f-display); color: var(--accent); padding-top: 2px }
+.cause h3 { margin: 0 0 4px; font-size: 1.02rem; font-weight: 600; text-wrap: balance }
+.cause p { margin: 0 0 10px; color: var(--ink) }
+blockquote { margin: 0; padding: 10px 12px; background: var(--bg); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0;
+  font: .8rem/1.5 var(--f-mono); white-space: pre-wrap; overflow-x: auto; min-width: 0 }
+mark { background: var(--mark); color: inherit; border-radius: 2px }
+.cite { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: .8rem; color: var(--muted) }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; letter-spacing: .03em }
+.pill.current { background: var(--ok-soft); color: var(--ok) }
+.pill.superseded { background: var(--warn-soft); color: var(--warn) }
+.pill.unverified { background: var(--bad-soft); color: var(--bad) }
+.cite a { color: var(--accent) }
+.note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 12px; border-radius: 0 6px 6px 0; font-size: .88rem }
+.decline { border-left-color: var(--muted); background: var(--bg) }
+.fb { display: flex; gap: 6px; margin-top: 8px }
+.fb button { font-size: .78rem; padding: 4px 10px }
+.fb button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent) }
+table { border-collapse: collapse; width: 100%; font-size: .88rem }
+.tbl { overflow-x: auto }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600 }
+td.num { font-variant-numeric: tabular-nums; text-align: right }
+.diff { font: .8rem/1.6 var(--f-mono); white-space: pre-wrap; margin: 0; overflow-x: auto }
+.diff .del { color: var(--bad); background: var(--bad-soft); display: block; padding: 0 6px }
+.diff .add { color: var(--ok); background: var(--ok-soft); display: block; padding: 0 6px }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px }
+.metric .v { font: 600 1.6rem/1.1 var(--f-display); font-variant-numeric: tabular-nums }
+.metric .t { font-size: .78rem; color: var(--muted) }
+.metric .k { font-size: .82rem; margin-bottom: 6px }
+.v.good { color: var(--ok) } .v.bad { color: var(--bad) }
+footer { margin-top: 28px; font-size: .78rem; color: var(--muted) }
+.empty { color: var(--muted); font-size: .9rem }
+@media (prefers-reduced-motion: no-preference) { .cause, .note { animation: in .25s ease-out both } @keyframes in { from { opacity: .4; transform: translateY(4px) } } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Field Service Assistant</h1>
+      <p class="sub">Proof-of-concept demo on public Fresenius Medical Care North America technical documentation · built by ZapSight</p>
+    </div>
+    <span class="mode" id="mode">Loading…</span>
+  </header>
+
+  <nav aria-label="Views">
+    <a href="#ask" data-tab="ask">Ask</a>
+    <a href="#library" data-tab="library">Library</a>
+    <a href="#revisions" data-tab="revisions">Revisions</a>
+    <a href="#testset" data-tab="testset">Test set</a>
+  </nav>
+
+  <section data-view="ask">
+    <form class="panel" id="askForm">
+      <div class="ask-row">
+        <div><label class="lbl" for="model">Machine</label><select id="model"></select></div>
+        <div><label class="lbl" for="q">Symptom, alarm or error code</label>
+          <textarea id="q" placeholder="e.g. Blood pump shows E.04 and stops after start-up"></textarea></div>
+      </div>
+      <div class="chips" id="examples"></div>
+      <div class="actions">
+        <button class="primary" id="go" type="submit">Find probable causes</button>
+        <button id="stop" type="button" hidden>Stop</button>
+        <span class="mode" id="askMode"></span>
+        <span class="keybox" id="keyBox" hidden><input id="key" type="password" autocomplete="off" placeholder="Access code" aria-label="Access code"><button id="keyGo" type="button">Turn on Claude</button></span>
+      </div>
+    </form>
+    <div class="status-line" id="status" hidden></div>
+    <div id="results" style="display:grid;gap:12px"></div>
+  </section>
+
+  <section data-view="library" hidden>
+    <div class="panel">
+      <p style="margin-top:0">Every passage the assistant cites comes from these documents. Revision state is stored as data: when a newer revision of the same part number is loaded, the older one is marked superseded and is never used for answers.</p>
+      <div class="tbl"><table id="libTable"></table></div>
+    </div>
+  </section>
+
+  <section data-view="revisions" hidden>
+    <div id="revList" style="display:grid;gap:12px"></div>
+  </section>
+
+  <section data-view="testset" hidden>
+    <div class="panel">
+      <p style="margin-top:0">Scenarios written from the manuals' own troubleshooting tables and from public FDA MAUDE field reports. Each has a known answer location, so retrieval is scored, not guessed. Targets are the ones in the PoC proposal.</p>
+      <div class="metrics" id="metrics"></div>
+      <div class="actions"><button id="runEval" type="button">Run test set with Claude</button><span class="mode" id="evalNote"></span></div>
+    </div>
+    <div class="panel tbl"><table id="evalTable"></table></div>
+  </section>
+
+  <footer>Demo only. Source documents are public FMCNA publications, used here to illustrate the approach; they are not modified. Answers propose and cite; the technician decides.</footer>
+</div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const STOP = new Set("a an and are as at be by for from has have if in into is it its of on or the this to was were will with when not no after before while during then than".split(" "));
+  const tokenize = (s) => {
+    const out = [];
+    for (const m of String(s).toLowerCase().matchAll(/[a-z0-9]+(?:[.\-][a-z0-9]+)*/g)) {
+      const t = m[0];
+      if (!STOP.has(t)) out.push(t);
+      if (/[.\-]/.test(t)) for (const p of t.split(/[.\-]/)) if (p && !STOP.has(p) && p !== t) out.push(p);
+    }
+    return out;
+  };
+
+  let corpus = null, scenarios = [], docsById = {}, index = null, sample = null;
+  let ctl = null;
+
+  // ---------- BM25 ----------
+  const PHRASE_BONUS = 1.5;
+  function buildIndex(chunks) {
+    const df = new Map(), docs = [];
+    let total = 0;
+    for (const c of chunks) {
+      const toks = tokenize(c.text), tf = new Map(), bi = new Set();
+      for (const t of toks) tf.set(t, (tf.get(t) || 0) + 1);
+      for (let i = 1; i < toks.length; i++) bi.add(toks[i - 1] + " " + toks[i]);
+      for (const t of tf.keys()) df.set(t, (df.get(t) || 0) + 1);
+      docs.push({ c, tf, bi, len: toks.length });
+      total += toks.length;
+    }
+    return { docs, df, N: docs.length, avg: total / Math.max(1, docs.length) };
+  }
+  function search(query, { model, includeSuperseded = false, k = 8 } = {}) {
+    const qt = tokenize(query), q = [...new Set(qt)], k1 = 1.2, b = 0.75, res = [];
+    const pairs = [...new Set(qt.slice(1).map((t, i) => qt[i] + " " + t))];
+    for (const d of index.docs) {
+      const meta = docsById[d.c.doc];
+      if (model && !meta.models.includes(model)) continue;
+      if (!includeSuperseded && meta.status !== "current") continue;
+      let s = 0;
+      for (const t of q) {
+        const f = d.tf.get(t); if (!f) continue;
+        const idf = Math.log(1 + (index.N - index.df.get(t) + 0.5) / (index.df.get(t) + 0.5));
+        s += idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * d.len / index.avg));
+      }
+      // Phrase bonus: alarm names and procedure titles are multi-word ("5 Minutes Flow Off").
+      if (s > 0) for (const p of pairs) if (d.bi.has(p)) s += PHRASE_BONUS;
+      if (s > 0) res.push({ chunk: d.c, score: s });
+    }
+    return res.sort((a, b) => b.score - a.score).slice(0, k);
+  }
+  const MIN_SCORE = 10.0; // below this the corpus has no real evidence: decline
+
+  // ---------- rendering helpers ----------
+  const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
+  function highlight(text, terms) {
+    let h = esc(text);
+    const ts = [...new Set(terms)].filter((t) => t.length > 2).sort((a, b) => b.length - a.length);
+    if (!ts.length) return h;
+    const re = new RegExp("\\b(" + ts.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "gi");
+    return h.replace(re, "<mark>$1</mark>");
+  }
+  function markQuote(text, quote) {
+    // Show the whole passage with the cited sentence highlighted, matching across whitespace differences.
+    const words = quote.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const m = new RegExp(words.join("\\s+"), "i").exec(text);
+    if (!m) return esc(text);
+    return esc(text.slice(0, m.index)) + "<mark>" + esc(m[0]) + "</mark>" + esc(text.slice(m.index + m[0].length));
+  }
+  function citeHtml(chunk, { verified = true } = {}) {
+    const d = docsById[chunk.doc];
+    const printed = d.page_numbers === "printed"; // text-only source: page numbers are the manual's printed ones
+    const link = d.source_url ? `<a href="${esc(d.source_url)}${printed ? "" : "#page=" + chunk.page}" target="_blank" rel="noopener">${printed ? "open PDF" : "open PDF p." + chunk.page}</a>` : "";
+    return `<div class="cite"><span class="mono">P/N ${esc(d.part_number)} Rev ${esc(d.rev)}</span><span>${esc(d.doc_type)}</span><span>${printed ? "Page" : "PDF page"} ${chunk.page}</span>
+      <span class="pill ${d.status}">${d.status === "current" ? "Current revision" : "Superseded"}</span>
+      ${verified ? "" : '<span class="pill unverified">Quote not found in source</span>'}${link}</div>`;
+  }
+  const status = (html) => { const el = $("#status"); el.hidden = !html; el.innerHTML = html || ""; };
+
+  function supersededNote(query, model) {
+    const all = search(query, { model, includeSuperseded: true, k: 5 });
+    const old = all.find((r) => docsById[r.chunk.doc].status === "superseded");
+    if (!old) return "";
+    const d = docsById[old.chunk.doc], nd = docsById[d.superseded_by];
+    return `<div class="note">This question also matches <span class="mono">P/N ${esc(d.part_number)} Rev ${esc(d.rev)}</span>, which is superseded by <span class="mono">Rev ${esc(nd.rev)}</span>. The older revision was not used. <a href="#revisions">See what changed</a>.</div>`;
+  }
+
+  // ---------- feedback (per viewer, this browser only) ----------
+  const FB_KEY = "fsa-feedback";
+  const readFb = () => { try { return JSON.parse(localStorage.getItem(FB_KEY) || "{}"); } catch { return {}; } };
+  const writeFb = (o) => { try { localStorage.setItem(FB_KEY, JSON.stringify(o)); } catch {} };
+  function fbHtml(key) {
+    const v = readFb()[key];
+    return `<div class="fb" data-key="${esc(key)}"><button type="button" data-v="up" aria-pressed="${v === "up"}">Useful</button><button type="button" data-v="down" aria-pressed="${v === "down"}">Not useful</button></div>`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".fb button"); if (!b) return;
+    const box = b.parentElement, fb = readFb();
+    fb[box.dataset.key] = b.dataset.v; writeFb(fb);
+    box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  });
+
+  // ---------- the answer pipeline ----------
+  function promptFor(query, model, hits) {
+    const passages = hits.map((h, i) => {
+      const d = docsById[h.chunk.doc];
+      return `[P${i + 1}] ${d.title} (P/N ${d.part_number} Rev ${d.rev}, ${d.page_numbers === "printed" ? "page" : "PDF page"} ${h.chunk.page})\n${h.chunk.text}`;
+    }).join("\n\n---\n\n");
+    return `You support a field service technician repairing a ${model} hemodialysis machine. The technician reports:\n"${query}"\n\n` +
+      `Below are passages from the current revision of the manufacturer's documentation. Use ONLY these passages.\n\n${passages}\n\n` +
+      `Return 2 to 5 probable root causes, most likely first. For each: a short cause title, one or two sentences of reasoning that connects the symptom to the passage, ` +
+      `the passage label, and a quote copied EXACTLY (character for character, 1-3 lines) from that passage that supports it. ` +
+      `If the passages do not support any cause, decline instead. Never invent part numbers, values or steps that are not in the passages.\n\n` +
+      `Reply with only JSON: {"declined": false, "decline_reason": "", "causes": [{"cause": "...", "reasoning": "...", "passage": "P1", "quote": "..."}]}`;
+  }
+
+  async function answer(query, model, { render = true, signal } = {}) {
+    const t0 = performance.now();
+    const hits = search(query, { model, k: 8 });
+    const out = { query, model, hits, causes: [], declined: false, reason: "", mode: sample ? "claude" : "search" };
+    if (!hits.length || hits[0].score < MIN_SCORE) {
+      out.declined = true; out.reason = "No passage in the current documents matches this description closely enough.";
+    } else if (sample) {
+      const res = sample.remote ? await sample.ask(query, model, hits, signal) : await sample.json(promptFor(query, model, hits), { signal, modelTier: "default" });
+      if (res && res.declined) { out.declined = true; out.reason = String(res.decline_reason || "The passages do not support a cause."); }
+      for (const c of (res && Array.isArray(res.causes) ? res.causes : []).slice(0, 5)) {
+        const i = parseInt(String(c.passage || "").replace(/\D/g, ""), 10) - 1;
+        const hit = hits[i]; if (!hit) continue;
+        const quote = String(c.quote || "");
+        const verified = quote.length > 8 && norm(hit.chunk.text).includes(norm(quote));
+        out.causes.push({ cause: String(c.cause || ""), reasoning: String(c.reasoning || ""), chunk: hit.chunk, quote, verified });
+      }
+      // A cause we cannot trace to its passage is not shown as an answer.
+      out.unverified = out.causes.filter((c) => !c.verified).length;
+      out.causes = out.causes.filter((c) => c.verified);
+      if (!out.causes.length && !out.declined) { out.declined = true; out.reason = "Claude's suggestions could not be traced to an exact passage, so none are shown."; }
+    }
+    out.ms = performance.now() - t0;
+    if (render) renderAnswer(out);
+    return out;
+  }
+
+  function renderAnswer(out) {
+    const terms = tokenize(out.query), r = $("#results"), key = norm(out.model + " " + out.query);
+    let html = supersededNote(out.query, out.model);
+    if (out.declined) {
+      html += `<div class="note decline"><strong>No confident answer.</strong> ${esc(out.reason)} This is logged as a decline rather than guessed.</div>`;
+    } else if (out.mode === "claude") {
+      html += out.causes.map((c, i) => `<article class="panel cause"><div class="rank">${i + 1}</div><div style="min-width:0">
+        <h3>${esc(c.cause)}</h3><p>${esc(c.reasoning)}</p>
+        <blockquote>${markQuote(c.chunk.text, c.quote)}</blockquote>${citeHtml(c.chunk)}${fbHtml(key + "#" + i)}</div></article>`).join("");
+      if (out.unverified) html += `<p class="mode">${out.unverified} suggestion${out.unverified > 1 ? "s were" : " was"} dropped because the quote did not match the source text exactly.</p>`;
+    } else {
+      html += `<p class="mode">Search-only mode: the most relevant passages from current revisions, ranked. ${upsell()}</p>`;
+      html += out.hits.slice(0, 4).map((h, i) => `<article class="panel cause"><div class="rank">${i + 1}</div><div style="min-width:0">
+        <h3>${esc(docsById[h.chunk.doc].title)}</h3><blockquote>${highlight(h.chunk.text, terms)}</blockquote>${citeHtml(h.chunk)}${fbHtml(key + "#" + i)}</div></article>`).join("");
+    }
+    r.innerHTML = html;
+    status(`<span>Answered in ${(out.ms / 1000).toFixed(1)} s</span><span>${out.hits.length} passages searched in depth from ${index.N} indexed</span><span>Only current revisions used</span>`);
+  }
+
+  // ---------- views ----------
+  function renderLibrary() {
+    const rows = corpus.documents.map((d) => `<tr><td>${esc(d.title)}<div class="mode">${esc(d.manufacturer)}${d.firmware ? " · " + esc(d.firmware) : ""}</div></td>
+      <td class="mono">${esc(d.part_number)}</td><td class="mono">${esc(d.rev)}</td><td>${esc(d.models.join(", "))}</td>
+      <td class="num">${d.pages}</td><td class="num">${d.chunks}</td>
+      <td><span class="pill ${d.status}">${d.status === "current" ? "Current" : "Superseded by Rev " + esc(docsById[d.superseded_by].rev)}</span></td>
+      <td>${d.source_url ? `<a href="${esc(d.source_url)}" target="_blank" rel="noopener">Source</a>` : ""}</td></tr>`).join("");
+    $("#libTable").innerHTML = `<thead><tr><th>Document</th><th>P/N</th><th>Rev</th><th>Machine</th><th class="num">Pages</th><th class="num">Passages</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+  }
+  function renderRevisions() {
+    if (!corpus.revisions.length) { $("#revList").innerHTML = `<div class="panel empty">No document in the library has more than one revision loaded.</div>`; return; }
+    $("#revList").innerHTML = corpus.revisions.map((r) => {
+      const a = docsById[r.from], b = docsById[r.to];
+      const lines = [...r.removed.map((l) => `<span class="del">− ${esc(l)}</span>`), ...r.added.map((l) => `<span class="add">+ ${esc(l)}</span>`)].join("");
+      return `<div class="panel"><label class="lbl">P/N ${esc(r.part_number)} · ${esc(a.title)}</label>
+        <p style="margin:0 0 10px"><span class="mono">Rev ${esc(a.rev)}</span> <span class="pill superseded">Superseded</span> → <span class="mono">Rev ${esc(b.rev)}</span> <span class="pill current">Current</span>.
+        ${r.removed.length + r.added.length} changed lines. A reviewer approves this diff instead of re-reading the manual.</p>
+        <pre class="diff">${lines || "No text changes detected."}</pre></div>`;
+    }).join("");
+  }
+
+  // ---------- test set ----------
+  // A scenario passes on its expected doc/pages, or on any "also" doc/pages (the same procedure written up in another manual).
+  const isExpected = (chunk, s) => [{ doc: s.expect_doc, pages: s.expect_pages }, ...(s.also || [])].some((e) => chunk.doc === e.doc && (!e.pages || e.pages.includes(chunk.page)));
+  const hitAt = (hits, s, k) => hits.slice(0, k).some((h) => isExpected(h.chunk, s));
+  let evalRows = [];
+  function renderEval() {
+    if (!scenarios.length) { $("#metrics").innerHTML = `<p class="empty">No test scenarios loaded yet.</p>`; $("#runEval").hidden = true; $("#evalTable").innerHTML = ""; return; }
+    const n = evalRows.length, pct = (x) => n ? Math.round(100 * x / n) : 0;
+    const top3 = pct(evalRows.filter((r) => r.retrieval).length);
+    const ran = evalRows.filter((r) => r.claude);
+    const cited = ran.length ? Math.round(100 * ran.filter((r) => r.claude.causes.length && r.claude.causes.every((c) => docsById[c.chunk.doc].status === "current")).length / ran.length) : null;
+    const top1 = ran.length ? Math.round(100 * ran.filter((r) => r.claude.causes[0] && isExpected(r.claude.causes[0].chunk, r.s)).length / ran.length) : null;
+    const declined = ran.filter((r) => r.claude.declined).length;
+    const lat = ran.length ? ran.reduce((a, r) => a + r.claude.ms, 0) / ran.length / 1000 : null;
+    const m = (k, v, t, good) => `<div class="metric panel"><div class="k">${k}</div><div class="v ${good === undefined ? "" : good ? "good" : "bad"}">${v}</div><div class="t">${t}</div></div>`;
+    $("#metrics").innerHTML =
+      m("Right passage in top 3 (search)", top3 + "%", `${n} scenarios · computed on load`, top3 >= 70) +
+      m("Top cause cites the right passage", top1 === null ? "–" : top1 + "%", "Target: above 70%", top1 === null ? undefined : top1 > 70) +
+      m("Answers citing current revision", cited === null ? "–" : cited + "%", "Target: above 95%", cited === null ? undefined : cited > 95) +
+      m("Time to probable cause", lat === null ? "–" : lat.toFixed(1) + " s", "Target: under 30 s", lat === null ? undefined : lat < 30) +
+      m("Declined", ran.length ? `${declined} of ${ran.length}` : "–", "Tracked, not targeted");
+    $("#evalTable").innerHTML = `<thead><tr><th>Scenario</th><th>Source</th><th>Expected</th><th>Search top 3</th><th>Claude top cause</th></tr></thead><tbody>` +
+      evalRows.map((r) => `<tr><td>${esc(r.s.query)}</td><td class="mode">${esc(r.s.origin || "")}</td><td class="mono">${esc(r.s.expect_doc)} p.${esc((r.s.expect_pages || []).join(","))}${(r.s.also || []).map((e) => `<br>${esc(e.doc)} p.${esc((e.pages || []).join(","))}`).join("")}</td>
+        <td>${r.retrieval ? '<span class="pill current">Found</span>' : '<span class="pill unverified">Missed</span>'}</td>
+        <td>${r.claude ? (r.claude.declined ? '<span class="pill superseded">Declined</span>' : r.claude.causes[0] ? esc(r.claude.causes[0].cause) + ` <span class="mono">${esc(r.claude.causes[0].chunk.doc)} p.${r.claude.causes[0].chunk.page}</span>` : "–") : '<span class="mode">not run</span>'}</td></tr>`).join("") + "</tbody>";
+  }
+  $("#runEval").addEventListener("click", async () => {
+    const btn = $("#runEval"); btn.disabled = true;
+    for (let i = 0; i < evalRows.length; i++) {
+      $("#evalNote").textContent = `Running ${i + 1} of ${evalRows.length}…`;
+      try { evalRows[i].claude = await answer(evalRows[i].s.query, evalRows[i].s.model, { render: false }); }
+      catch (e) {
+        if (["not_granted", "sampling_disabled", "rate_limited", "session_expired"].includes(e && e.code)) { $("#evalNote").textContent = "Claude is not available for this view, so the run stopped."; break; }
+      }
+      renderEval();
+    }
+    if ($("#evalNote").textContent.startsWith("Running")) $("#evalNote").textContent = "Done.";
+    btn.disabled = false;
+  });
+
+  // ---------- tabs ----------
+  const TABS = ["ask", "library", "revisions", "testset"];
+  function show(tab) {
+    if (!TABS.includes(tab)) tab = "ask";
+    document.querySelectorAll("[data-view]").forEach((s) => (s.hidden = s.dataset.view !== tab));
+    document.querySelectorAll("nav a").forEach((a) => a.setAttribute("aria-current", a.dataset.tab === tab ? "page" : "false"));
+  }
+  document.querySelector("nav").addEventListener("click", (e) => { const a = e.target.closest("a"); if (!a) return; e.preventDefault(); show(a.dataset.tab); try { history.replaceState(null, "", "#" + a.dataset.tab); } catch {} });
+  addEventListener("hashchange", () => show(location.hash.slice(1)));
+  document.addEventListener("click", (e) => { const a = e.target.closest('a[href="#revisions"]'); if (a && !a.closest("nav")) { e.preventDefault(); show("revisions"); } });
+
+  // ---------- ask form ----------
+  $("#keyGo").addEventListener("click", () => {
+    const code = $("#key").value.trim(); if (!code) return;
+    store(KEY, code); sample = remoteSample(code); $("#key").value = ""; setMode();
+  });
+  $("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#keyGo").click(); } });
+
+  $("#askForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const q = $("#q").value.trim(), model = $("#model").value; if (!q) return;
+    ctl = new AbortController(); $("#go").disabled = true; $("#stop").hidden = !sample;
+    $("#results").innerHTML = ""; status(sample ? "<span>Searching the manuals and asking Claude… usually 10 to 30 s</span>" : "");
+    try { await answer(q, model, { signal: ctl.signal }); }
+    catch (err) {
+      const code = err && err.code;
+      if (code === "not_granted" || code === "sampling_disabled") {
+        const wasRemote = sample && sample.remote; sample = null; setMode(); await answer(q, model);
+        if (wasRemote) status("<span>That access code was not accepted, so these are search results only.</span>");
+      }
+      else if (code !== "cancelled") status(`<span>Claude could not answer this time (${esc(code || "error")}). Try again.</span>`);
+      else status("");
+    }
+    finally { $("#go").disabled = false; $("#stop").hidden = true; }
+  });
+  $("#stop").addEventListener("click", () => ctl && ctl.abort());
+  $("#examples").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; $("#q").value = c.dataset.q; $("#model").value = c.dataset.m; $("#askForm").requestSubmit(); });
+
+  // ---------- hosted mode: Claude via this site's /api/ask, unlocked by an access code ----------
+  let remote = false; // true when the server has a Claude API key configured
+  const KEY = "fsa-access-code";
+  const upsell = () => remote ? "Enter the access code to get ranked causes with reasoning." : "Open this page in Claude to get ranked causes with reasoning.";
+  const store = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+  const stored = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  function remoteSample(code) {
+    return {
+      remote: true,
+      async ask(query, model, hits, signal) {
+        let r;
+        try {
+          r = await fetch("api/ask", { method: "POST", signal, headers: { "content-type": "application/json", "x-access-code": code },
+            body: JSON.stringify({ query, model, ids: hits.map((h) => h.chunk.id) }) });
+        } catch (e) { throw Object.assign(new Error("network"), { code: e && e.name === "AbortError" ? "cancelled" : "network_error" }); }
+        if (r.status === 401) { store(KEY, null); throw Object.assign(new Error("bad code"), { code: "not_granted" }); }
+        if (r.status === 429) throw Object.assign(new Error("busy"), { code: "rate_limited" });
+        if (!r.ok) throw Object.assign(new Error("server"), { code: "server_error" });
+        return r.json();
+      },
+    };
+  }
+  async function detectRemote() {
+    try { const r = await fetch("api/ask", { method: "GET" }); remote = r.ok && !!(await r.json()).enabled; } catch { remote = false; }
+    if (!remote) return null;
+    const fromUrl = new URLSearchParams(location.search).get("key");
+    if (fromUrl) { store(KEY, fromUrl); history.replaceState(null, "", location.pathname + location.hash); }
+    const code = fromUrl || stored(KEY);
+    return code ? remoteSample(code) : null;
+  }
+
+  function setMode() {
+    const txt = sample ? "Claude reasoning on · answers must quote the source exactly" : "Search-only mode";
+    $("#mode").textContent = `${corpus.documents.length} documents · ${index.N} passages`;
+    $("#askMode").textContent = txt;
+    $("#runEval").disabled = !sample; $("#evalNote").textContent = sample ? "" : upsell().replace("get ranked causes", "run the test set");
+    $("#keyBox").hidden = !(remote && !sample);
+  }
+
+  // ---------- boot ----------
+  (async () => {
+    try {
+      corpus = await (await fetch("corpus.json")).json();
+    } catch {
+      $("#mode").textContent = "Library not loaded"; $("#results").innerHTML = `<div class="note">The document library could not be loaded.</div>`; return;
+    }
+    try { scenarios = (await (await fetch("scenarios.json")).json()).scenarios || []; } catch { scenarios = []; }
+    for (const d of corpus.documents) docsById[d.id] = d;
+    index = buildIndex(corpus.chunks);
+    const models = [...new Set(corpus.documents.flatMap((d) => d.models))];
+    $("#model").innerHTML = models.map((m) => `<option>${esc(m)}</option>`).join("");
+    $("#examples").innerHTML = scenarios.filter((s) => s.example).slice(0, 5).map((s) => `<button type="button" class="chip" data-q="${esc(s.query)}" data-m="${esc(s.model)}">${esc(s.query.length > 60 ? s.query.slice(0, 57) + "…" : s.query)}</button>`).join("");
+    evalRows = scenarios.map((s) => ({ s, retrieval: hitAt(search(s.query, { model: s.model, k: 3 }), s, 3) }));
+    renderLibrary(); renderRevisions(); renderEval();
+    show(location.hash.slice(1));
+    setMode();
+    sample = window.claude ? await claude.use("sample") : await detectRemote();
+    setMode();
+  })();
+})();
+</script>

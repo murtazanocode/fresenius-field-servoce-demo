@@ -1,0 +1,3 @@
+{
+  "functions": { "api/ask.js": { "maxDuration": 60, "includeFiles": "corpus.json" } }
+}
