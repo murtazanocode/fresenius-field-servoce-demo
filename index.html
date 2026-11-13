@@ -1,172 +1,244 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Field Service Assistant</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-.keybox { display: inline-flex; gap: 6px; align-items: center; }
-.keybox input { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: inherit; width: 140px; }
-/* Layout: one working column like a service tablet; a tab strip switches Ask / Library / Revisions / Test set. */
 :root {
-  --bg: #f3f5f6;
-  --panel: #ffffff;
-  --ink: #16212a;
-  --muted: #5b6b77;
-  --line: #d9e0e5;
-  --accent: #1f5f8b;
-  --accent-soft: #e3eef6;
-  --ok: #1d7a4e;
-  --ok-soft: #e1f2e9;
-  --warn: #9a5b00;
-  --warn-soft: #fbefd9;
-  --bad: #a3322b;
-  --bad-soft: #f8e3e1;
-  --mark: #fff0a8;
-  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
-  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --bg: #f3f5f6; --panel: #ffffff; --ink: #1b262c; --muted: #5d6b74; --line: #d9e0e5;
+  --accent: #1f5f8b; --accent-ink: #ffffff; --accent-soft: #e4eef5;
+  --ok: #1d7a4a; --ok-soft: #e3f3ea; --warn: #9a6200; --warn-soft: #fbf0dc; --bad: #b3261e; --bad-soft: #fbe6e4;
+  --hl: rgba(255, 213, 0, 0.42); --me: #1f5f8b; --me-ink: #fff;
+  --f-body: "IBM Plex Sans", system-ui, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f1519; --panel: #172026; --ink: #e4ebf0; --muted: #93a3ae; --line: #2a3640;
-  --accent: #7fb6dd; --accent-soft: #1b3142; --ok: #6fcf9c; --ok-soft: #173327;
-  --warn: #f0b45a; --warn-soft: #3a2c14; --bad: #f08a80; --bad-soft: #3a1d1b; --mark: #5c4f12;
-  color-scheme: dark } }
+  --accent: #6fb0dc; --accent-ink: #0f1519; --accent-soft: #1d2f3c;
+  --ok: #6fcf97; --ok-soft: #173326; --warn: #e6b450; --warn-soft: #33290f; --bad: #f28b82; --bad-soft: #3a1a18;
+  --hl: rgba(255, 213, 0, 0.35); --me: #2c6e9b; --me-ink: #fff;
+} }
 :root[data-theme="dark"] {
   --bg: #0f1519; --panel: #172026; --ink: #e4ebf0; --muted: #93a3ae; --line: #2a3640;
-  --accent: #7fb6dd; --accent-soft: #1b3142; --ok: #6fcf9c; --ok-soft: #173327;
-  --warn: #f0b45a; --warn-soft: #3a2c14; --bad: #f08a80; --bad-soft: #3a1d1b; --mark: #5c4f12;
-  color-scheme: dark }
-
+  --accent: #6fb0dc; --accent-ink: #0f1519; --accent-soft: #1d2f3c;
+  --ok: #6fcf97; --ok-soft: #173326; --warn: #e6b450; --warn-soft: #33290f; --bad: #f28b82; --bad-soft: #3a1a18;
+  --hl: rgba(255, 213, 0, 0.35); --me: #2c6e9b; --me-ink: #fff;
+}
 * { box-sizing: border-box }
 [hidden] { display: none !important }
-body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); }
-.wrap { max-width: 920px; margin: 0 auto; padding-block: 20px 48px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
-h1 { font: 600 1.7rem/1.1 var(--f-display); letter-spacing: .01em; margin: 0; text-wrap: balance }
-.sub { color: var(--muted); font-size: .85rem; margin: 4px 0 0 }
-.mono { font-family: var(--f-mono); font-size: .82em }
-nav { display: flex; gap: 4px; margin: 18px 0 16px; border-bottom: 1px solid var(--line); overflow-x: auto }
-nav a { padding: 8px 12px; color: var(--muted); text-decoration: none; font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap }
-nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent) }
-nav a:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
-section[data-view] { display: grid; gap: 16px }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px }
-label.lbl { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; font-weight: 600 }
-.ask-row { display: grid; grid-template-columns: 160px 1fr; gap: 12px }
-@media (max-width: 560px) { .ask-row { grid-template-columns: 1fr } }
-select, textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px }
-textarea { min-height: 64px; resize: vertical }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px }
-button { font: 500 .9rem var(--f-body); border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink) }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel) }
-button:disabled { opacity: .55; cursor: default }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px }
-.chip { text-align: left; font-size: .8rem; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted) }
-.chip:hover { color: var(--ink); border-color: var(--accent) }
-.mode { font-size: .8rem; color: var(--muted) }
-.status-line { font-size: .85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px }
-.cause { display: grid; grid-template-columns: 34px 1fr; gap: 0 12px }
-.rank { font: 600 1.3rem/1 var(--f-display); color: var(--accent); padding-top: 2px }
-.cause h3 { margin: 0 0 4px; font-size: 1.02rem; font-weight: 600; text-wrap: balance }
-.cause p { margin: 0 0 10px; color: var(--ink) }
-blockquote { margin: 0; padding: 10px 12px; background: var(--bg); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0;
-  font: .8rem/1.5 var(--f-mono); white-space: pre-wrap; overflow-x: auto; min-width: 0 }
-mark { background: var(--mark); color: inherit; border-radius: 2px }
-.cite { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: .8rem; color: var(--muted) }
-.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; letter-spacing: .03em }
-.pill.current { background: var(--ok-soft); color: var(--ok) }
-.pill.superseded { background: var(--warn-soft); color: var(--warn) }
-.pill.unverified { background: var(--bad-soft); color: var(--bad) }
-.cite a { color: var(--accent) }
-.note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 12px; border-radius: 0 6px 6px 0; font-size: .88rem }
-.decline { border-left-color: var(--muted); background: var(--bg) }
-.fb { display: flex; gap: 6px; margin-top: 8px }
-.fb button { font-size: .78rem; padding: 4px 10px }
-.fb button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent) }
-table { border-collapse: collapse; width: 100%; font-size: .88rem }
-.tbl { overflow-x: auto }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top }
-th { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600 }
-td.num { font-variant-numeric: tabular-nums; text-align: right }
-.diff { font: .8rem/1.6 var(--f-mono); white-space: pre-wrap; margin: 0; overflow-x: auto }
-.diff .del { color: var(--bad); background: var(--bad-soft); display: block; padding: 0 6px }
-.diff .add { color: var(--ok); background: var(--ok-soft); display: block; padding: 0 6px }
-.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px }
-.metric .v { font: 600 1.6rem/1.1 var(--f-display); font-variant-numeric: tabular-nums }
-.metric .t { font-size: .78rem; color: var(--muted) }
-.metric .k { font-size: .82rem; margin-bottom: 6px }
-.v.good { color: var(--ok) } .v.bad { color: var(--bad) }
-footer { margin-top: 28px; font-size: .78rem; color: var(--muted) }
-.empty { color: var(--muted); font-size: .9rem }
-@media (prefers-reduced-motion: no-preference) { .cause, .note { animation: in .25s ease-out both } @keyframes in { from { opacity: .4; transform: translateY(4px) } } }
+html, body { margin: 0 }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+button, input, select, textarea { font: inherit; color: inherit }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 16px }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; justify-content: space-between }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em }
+.sub { color: var(--muted); font-size: 13px }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--panel) }
+.pill.on { color: var(--ok); border-color: var(--ok); background: var(--ok-soft) }
+nav { display: flex; gap: 4px; margin: 14px 0; border-bottom: 1px solid var(--line); overflow-x: auto }
+nav button { background: none; border: 0; padding: 8px 12px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap }
+nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500 }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px }
+.grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 16px; align-items: start }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr } }
+/* chat */
+.chat { display: flex; flex-direction: column; height: calc(100vh - 150px); min-height: 520px }
+@media (max-width: 900px) { .chat { height: auto; min-height: 0 } }
+.chat-top { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+.chat-top label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em }
+select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel) }
+.msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px }
+@media (max-width: 900px) { .msgs { max-height: none } }
+.msg { max-width: 92%; }
+.msg.me { align-self: flex-end; background: var(--me); color: var(--me-ink); padding: 8px 12px; border-radius: 14px 14px 4px 14px }
+.msg.me img { display: block; max-width: 220px; border-radius: 8px; margin-top: 6px }
+.msg.ai { align-self: flex-start; width: 100% }
+.bubble { background: var(--accent-soft); padding: 10px 12px; border-radius: 14px 14px 14px 4px }
+.who { font-size: 12px; color: var(--muted); margin-bottom: 3px }
+.typing { display: inline-flex; gap: 4px; padding: 12px }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: b 1.2s infinite }
+.typing i:nth-child(2) { animation-delay: .15s } .typing i:nth-child(3) { animation-delay: .3s }
+@keyframes b { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+.cause { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; background: var(--panel) }
+.cause h4 { margin: 0 0 4px; font-size: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap }
+.lk { font-size: 11px; padding: 1px 8px; border-radius: 999px; font-weight: 500 }
+.lk.high { background: var(--bad-soft); color: var(--bad) } .lk.medium { background: var(--warn-soft); color: var(--warn) } .lk.low { background: var(--accent-soft); color: var(--accent) }
+.src { display: inline-flex; gap: 6px; align-items: center; margin-top: 6px; font: 12px var(--f-mono); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: pointer; text-align: left }
+.src:hover, .src.active { border-color: var(--accent); color: var(--accent) }
+.quote { font: 12.5px/1.45 var(--f-mono); border-left: 3px solid var(--accent); padding: 4px 8px; margin: 6px 0 0; white-space: pre-wrap; background: var(--bg) }
+.hist { margin-top: 8px; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: var(--warn-soft); }
+.hist b { color: var(--warn) }
+.chip { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); margin: 2px 4px 0 0; cursor: pointer; background: var(--panel) }
+.chip:hover { border-color: var(--accent) }
+.chip.mem { border-color: var(--ok); color: var(--ok) }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px }
+.btn { border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; border-radius: 8px; cursor: pointer }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+.btn:disabled { opacity: .5; cursor: default }
+.composer { border-top: 1px solid var(--line); padding: 10px; display: flex; flex-direction: column; gap: 8px }
+.examples { display: flex; flex-wrap: wrap; gap: 6px }
+.examples button { font-size: 12.5px; text-align: left; border: 1px dashed var(--line); background: none; padding: 4px 10px; border-radius: 999px; cursor: pointer; color: var(--muted) }
+.examples button:hover { color: var(--ink); border-color: var(--accent) }
+.examples button.star { border-style: solid; border-color: var(--warn); color: var(--warn) }
+.row { display: flex; gap: 8px; align-items: flex-end }
+textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel) }
+.icon { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; display: grid; place-items: center; flex: none }
+.icon:hover { border-color: var(--accent) }
+.icon.send { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.attach { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted) }
+.attach img { height: 48px; border-radius: 6px; border: 1px solid var(--line) }
+.note { font-size: 13px; color: var(--muted) }
+.small { font-size: 12px; color: var(--muted) }
+/* evidence */
+.evidence { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto }
+@media (max-width: 900px) { .evidence { position: static; max-height: none } }
+.ev-head { padding: 12px 14px; border-bottom: 1px solid var(--line) }
+.ev-head h3 { margin: 0; font-size: 15px }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; margin-top: 8px }
+.meta dt { color: var(--muted) } .meta dd { margin: 0; font-family: var(--f-mono); font-size: 12.5px; word-break: break-all }
+.status-ok { color: var(--ok); font-weight: 500 }
+.ev-body { padding: 12px; }
+.pdfbox { position: relative; display: inline-block; max-width: 100%; border: 1px solid var(--line); background: #fff }
+.pdfbox canvas { display: block; max-width: 100%; height: auto }
+.ev-text { font: 12.5px/1.5 var(--f-mono); white-space: pre-wrap; background: var(--bg); padding: 10px; border-radius: 8px; border: 1px solid var(--line) }
+mark { background: var(--hl); color: inherit; padding: 0 1px }
+.empty { color: var(--muted); padding: 30px 16px; text-align: center }
+/* steps */
+.steps { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px }
+.step { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 8px; background: var(--panel) }
+.step .n { font-weight: 600; margin-right: 6px }
+.step .check { font-size: 13px; color: var(--muted); margin-top: 4px }
+.step .vin { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap }
+.step input[type=text] { flex: 1; min-width: 160px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel) }
+.verdict { margin-top: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13.5px }
+.verdict.pass { background: var(--ok-soft) } .verdict.fail { background: var(--bad-soft) } .verdict.needs_more { background: var(--warn-soft) }
+.verdict b { text-transform: uppercase; font-size: 12px; letter-spacing: .05em }
+.verdict.pass b { color: var(--ok) } .verdict.fail b { color: var(--bad) } .verdict.needs_more b { color: var(--warn) }
+.closebox { margin-top: 10px; padding: 10px; border: 1px solid var(--ok); border-radius: 8px; background: var(--ok-soft) }
+.closebox select, .closebox input { width: 100%; margin-top: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel) }
+/* tables / other tabs */
+.pad { padding: 14px 16px }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em }
+.tablewrap { overflow-x: auto }
+.mono { font-family: var(--f-mono); font-size: 12.5px }
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 12px 0 }
+@media (max-width: 760px) { .flow { grid-template-columns: 1fr 1fr } }
+.flow div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--bg); font-size: 13px }
+.flow b { display: block; font-size: 13.5px; margin-bottom: 2px }
+pre.json { font: 12px/1.45 var(--f-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow: auto; max-height: 420px }
+.banner { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); margin-bottom: 10px }
+.keybox { display: inline-flex; gap: 6px; align-items: center }
+.keybox input { padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); width: 130px }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 14px; z-index: 5 }
+footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
 </style>
-
+</head>
+<body>
 <div class="wrap">
   <header>
     <div>
       <h1>Field Service Assistant</h1>
-      <p class="sub">Proof-of-concept demo on public Fresenius Medical Care North America technical documentation · built by ZapSight</p>
+      <div class="sub">Proof-of-concept on public Fresenius Medical Care North America technical documentation · built by ZapSight</div>
     </div>
-    <span class="mode" id="mode">Loading…</span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="keybox" id="keyBox" hidden><input id="key" type="password" autocomplete="off" placeholder="Access code" aria-label="Access code"><button class="btn" id="keyGo" type="button">Turn on Claude</button></span>
+      <span class="pill" id="modePill">Loading…</span>
+    </div>
   </header>
 
-  <nav aria-label="Views">
-    <a href="#ask" data-tab="ask">Ask</a>
-    <a href="#library" data-tab="library">Library</a>
-    <a href="#revisions" data-tab="revisions">Revisions</a>
-    <a href="#testset" data-tab="testset">Test set</a>
+  <nav role="tablist">
+    <button role="tab" data-tab="assistant" aria-selected="true">Assistant</button>
+    <button role="tab" data-tab="library" aria-selected="false">Library</button>
+    <button role="tab" data-tab="cases" aria-selected="false">Past cases</button>
+    <button role="tab" data-tab="memory" aria-selected="false">Memory</button>
   </nav>
 
-  <section data-view="ask">
-    <form class="panel" id="askForm">
-      <div class="ask-row">
-        <div><label class="lbl" for="model">Machine</label><select id="model"></select></div>
-        <div><label class="lbl" for="q">Symptom, alarm or error code</label>
-          <textarea id="q" placeholder="e.g. Blood pump shows E.04 and stops after start-up"></textarea></div>
+  <section id="tab-assistant">
+    <div class="grid">
+      <div class="panel chat">
+        <div class="chat-top">
+          <label for="model">Machine</label>
+          <select id="model"></select>
+          <span class="small" id="libLine"></span>
+          <button class="btn" id="newChat" type="button" style="margin-left:auto">New case</button>
+        </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+        <div class="composer">
+          <div class="examples" id="examples"></div>
+          <div class="attach" id="attach" hidden><img id="attachImg" alt="Attached photo"><span id="attachName"></span><button class="btn" id="attachRemove" type="button">Remove</button></div>
+          <form class="row" id="form">
+            <input type="file" id="file" accept="image/*" capture="environment" hidden>
+            <button class="icon" id="photoBtn" type="button" title="Attach a photo of the machine or its display" aria-label="Attach photo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+            </button>
+            <textarea id="q" rows="1" placeholder="Describe the symptom or alarm, or attach a photo of the display…"></textarea>
+            <button class="icon send" id="send" type="submit" aria-label="Send">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l16-8-6 16-2-7z"/></svg>
+            </button>
+          </form>
+        </div>
       </div>
-      <div class="chips" id="examples"></div>
-      <div class="actions">
-        <button class="primary" id="go" type="submit">Find probable causes</button>
-        <button id="stop" type="button" hidden>Stop</button>
-        <span class="mode" id="askMode"></span>
-        <span class="keybox" id="keyBox" hidden><input id="key" type="password" autocomplete="off" placeholder="Access code" aria-label="Access code"><button id="keyGo" type="button">Turn on Claude</button></span>
-      </div>
-    </form>
-    <div class="status-line" id="status" hidden></div>
-    <div id="results" style="display:grid;gap:12px"></div>
-  </section>
 
-  <section data-view="library" hidden>
-    <div class="panel">
-      <p style="margin-top:0">Every passage the assistant cites comes from these documents. Revision state is stored as data: when a newer revision of the same part number is loaded, the older one is marked superseded and is never used for answers.</p>
-      <div class="tbl"><table id="libTable"></table></div>
+      <aside class="panel evidence" id="evidence" aria-label="Source evidence">
+        <div class="empty" id="evEmpty">
+          <b>Source evidence</b><br>
+          Every answer cites a manual passage. Click a source to see the page here, with the quoted lines highlighted.
+        </div>
+        <div id="evFull" hidden>
+          <div class="ev-head">
+            <h3 id="evTitle"></h3>
+            <dl class="meta" id="evMeta"></dl>
+          </div>
+          <div class="ev-body" id="evBody"></div>
+        </div>
+      </aside>
     </div>
   </section>
 
-  <section data-view="revisions" hidden>
-    <div id="revList" style="display:grid;gap:12px"></div>
-  </section>
+  <section id="tab-library" hidden><div class="panel pad">
+    <p class="note" style="margin-top:0">The assistant only answers from current revisions. Revision status is worked out from part number and revision letter, not from the cover page.</p>
+    <div class="tablewrap"><table id="libTable"></table></div>
+  </div></section>
 
-  <section data-view="testset" hidden>
-    <div class="panel">
-      <p style="margin-top:0">Scenarios written from the manuals' own troubleshooting tables and from public FDA MAUDE field reports. Each has a known answer location, so retrieval is scored, not guessed. Targets are the ones in the PoC proposal.</p>
-      <div class="metrics" id="metrics"></div>
-      <div class="actions"><button id="runEval" type="button">Run test set with Claude</button><span class="mode" id="evalNote"></span></div>
+  <section id="tab-cases" hidden><div class="panel pad">
+    <div class="banner"><b>Synthetic data.</b> These 18 service cases were written for this demo to show how field history combines with the manuals. They are not real Fresenius records.</div>
+    <div class="tablewrap"><table id="casesTable"></table></div>
+  </div></section>
+
+  <section id="tab-memory" hidden><div class="panel pad">
+    <h3 style="margin:0 0 4px">How each conversation becomes memory</h3>
+    <p class="note" style="margin:0">When the technician closes a case, the conversation is turned into a structured case record. The next technician who asks a similar question gets that record alongside the manuals and past cases.</p>
+    <div class="flow">
+      <div><b>1. Conversation</b>Question, photo, suggested causes, the sources cited and each verified step.</div>
+      <div><b>2. Case record</b>Turned into structured fields: machine, symptom, what fixed it, documents and revisions used.</div>
+      <div><b>3. Store</b>In this demo, your browser. In the PoC, the CMMS case and a searchable index, with an audit trail.</div>
+      <div><b>4. Reuse</b>Searched on every new question and shown as "From team memory" when it matches.</div>
     </div>
-    <div class="panel tbl"><table id="evalTable"></table></div>
-  </section>
+    <div id="memList"></div>
+    <div class="actions"><button class="btn" id="memClear" type="button">Clear memory</button></div>
+  </div></section>
 
-  <footer>Demo only. Source documents are public FMCNA publications, used here to illustrate the approach; they are not modified. Answers propose and cite; the technician decides.</footer>
+  <footer>Demo only. Source documents are public FMCNA publications, used here to illustrate the approach; they are not modified. Past cases are synthetic. Answers propose and cite; the technician decides.</footer>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 (() => {
-  const $ = (s) => document.querySelector(s);
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const STOP = new Set("a an and are as at be by for from has have if in into is it its of on or the this to was were will with when not no after before while during then than".split(" "));
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const norm = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const store = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v)); } catch {} };
+  const stored = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const toast = (t) => { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); };
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  // ---------- search (BM25) ----------
+  const STOP = new Set("a an and are as at be by for from has have if in into is it its of on or the this to was were will with when not no after before while during then than i my me we our it's what which how do does can".split(" "));
   const tokenize = (s) => {
     const out = [];
     for (const m of String(s).toLowerCase().matchAll(/[a-z0-9]+(?:[.\-][a-z0-9]+)*/g)) {
@@ -176,311 +248,483 @@ footer { margin-top: 28px; font-size: .78rem; color: var(--muted) }
     }
     return out;
   };
-
-  let corpus = null, scenarios = [], docsById = {}, index = null, sample = null;
-  let ctl = null;
-
-  // ---------- BM25 ----------
-  const PHRASE_BONUS = 1.5;
-  function buildIndex(chunks) {
-    const df = new Map(), docs = [];
-    let total = 0;
-    for (const c of chunks) {
-      const toks = tokenize(c.text), tf = new Map(), bi = new Set();
+  function buildIndex(items, textOf) {
+    const df = new Map(), docs = []; let total = 0;
+    for (const it of items) {
+      const toks = tokenize(textOf(it)), tf = new Map(), bi = new Set();
       for (const t of toks) tf.set(t, (tf.get(t) || 0) + 1);
       for (let i = 1; i < toks.length; i++) bi.add(toks[i - 1] + " " + toks[i]);
       for (const t of tf.keys()) df.set(t, (df.get(t) || 0) + 1);
-      docs.push({ c, tf, bi, len: toks.length });
-      total += toks.length;
+      docs.push({ it, tf, bi, len: toks.length }); total += toks.length;
     }
     return { docs, df, N: docs.length, avg: total / Math.max(1, docs.length) };
   }
-  function search(query, { model, includeSuperseded = false, k = 8 } = {}) {
-    const qt = tokenize(query), q = [...new Set(qt)], k1 = 1.2, b = 0.75, res = [];
-    const pairs = [...new Set(qt.slice(1).map((t, i) => qt[i] + " " + t))];
+  function search(index, query, keep, k) {
+    const qt = tokenize(query), q = [...new Set(qt)], pairs = [...new Set(qt.slice(1).map((t, i) => qt[i] + " " + t))], res = [];
     for (const d of index.docs) {
-      const meta = docsById[d.c.doc];
-      if (model && !meta.models.includes(model)) continue;
-      if (!includeSuperseded && meta.status !== "current") continue;
+      if (keep && !keep(d.it)) continue;
       let s = 0;
       for (const t of q) {
         const f = d.tf.get(t); if (!f) continue;
         const idf = Math.log(1 + (index.N - index.df.get(t) + 0.5) / (index.df.get(t) + 0.5));
-        s += idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * d.len / index.avg));
+        s += idf * (f * 2.2) / (f + 1.2 * (0.25 + 0.75 * d.len / index.avg));
       }
-      // Phrase bonus: alarm names and procedure titles are multi-word ("5 Minutes Flow Off").
-      if (s > 0) for (const p of pairs) if (d.bi.has(p)) s += PHRASE_BONUS;
-      if (s > 0) res.push({ chunk: d.c, score: s });
+      if (s > 0) for (const p of pairs) if (d.bi.has(p)) s += 1.5;
+      if (s > 0) res.push({ it: d.it, score: s });
     }
     return res.sort((a, b) => b.score - a.score).slice(0, k);
   }
-  const MIN_SCORE = 10.0; // below this the corpus has no real evidence: decline
+  const MIN_SCORE = 10, CASE_MIN = 6;
+
+  // ---------- state ----------
+  let corpus, docsById = {}, chunkById = {}, manualIdx, pastCases = [], caseIdx, caseById = {};
+  let remote = false, code = null;
+  let convo = []; // {role, text, image?, observation?, result?, hits?, cases?, mem?}
+  let pending = null; // attached image {media_type, data, url, name}
+  let busy = false;
+  const MEMKEY = "fsa-memory-v1", CODEKEY = "fsa-access-code";
+  const memory = () => { try { return JSON.parse(stored(MEMKEY) || "[]"); } catch { return []; } };
+
+  // ---------- server ----------
+  async function call(body) {
+    let r;
+    try {
+      r = await fetch("api/ask", { method: "POST", headers: { "content-type": "application/json", "x-access-code": code || "" }, body: JSON.stringify(body) });
+    } catch { throw Object.assign(new Error("network"), { code: "network_error" }); }
+    if (r.status === 401) { store(CODEKEY, null); code = null; setMode(); throw Object.assign(new Error("code"), { code: "not_granted" }); }
+    if (r.status === 429) throw Object.assign(new Error("busy"), { code: "rate_limited" });
+    if (!r.ok) throw Object.assign(new Error("server"), { code: "server_error" });
+    const j = await r.json();
+    if (j.refused) throw Object.assign(new Error("refused"), { code: "refused" });
+    return j;
+  }
+  const claudeOn = () => remote && !!code;
+  function setMode() {
+    const p = $("#modePill");
+    if (claudeOn()) { p.className = "pill on"; p.textContent = "Claude on · answers must quote the source exactly"; }
+    else { p.className = "pill"; p.textContent = remote ? "Search only · enter the access code for Claude" : "Search only"; }
+    $("#keyBox").hidden = !(remote && !code);
+  }
 
   // ---------- rendering helpers ----------
-  const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
-  function highlight(text, terms) {
-    let h = esc(text);
-    const ts = [...new Set(terms)].filter((t) => t.length > 2).sort((a, b) => b.length - a.length);
-    if (!ts.length) return h;
-    const re = new RegExp("\\b(" + ts.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "gi");
-    return h.replace(re, "<mark>$1</mark>");
-  }
-  function markQuote(text, quote) {
-    // Show the whole passage with the cited sentence highlighted, matching across whitespace differences.
-    const words = quote.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-    const m = new RegExp(words.join("\\s+"), "i").exec(text);
-    if (!m) return esc(text);
-    return esc(text.slice(0, m.index)) + "<mark>" + esc(m[0]) + "</mark>" + esc(text.slice(m.index + m[0].length));
-  }
-  function citeHtml(chunk, { verified = true } = {}) {
+  const docLabel = (d) => `${d.file} · Rev ${d.rev} · ${d.page_numbers === "printed" ? "page" : "PDF p."}`;
+  function srcButton(chunk, quote, label) {
     const d = docsById[chunk.doc];
-    const printed = d.page_numbers === "printed"; // text-only source: page numbers are the manual's printed ones
-    const link = d.source_url ? `<a href="${esc(d.source_url)}${printed ? "" : "#page=" + chunk.page}" target="_blank" rel="noopener">${printed ? "open PDF" : "open PDF p." + chunk.page}</a>` : "";
-    return `<div class="cite"><span class="mono">P/N ${esc(d.part_number)} Rev ${esc(d.rev)}</span><span>${esc(d.doc_type)}</span><span>${printed ? "Page" : "PDF page"} ${chunk.page}</span>
-      <span class="pill ${d.status}">${d.status === "current" ? "Current revision" : "Superseded"}</span>
-      ${verified ? "" : '<span class="pill unverified">Quote not found in source</span>'}${link}</div>`;
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "src";
+    b.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></svg>${esc(label ? label + " · " : "")}${esc(docLabel(d))}${chunk.page}`;
+    b.addEventListener("click", () => { document.querySelectorAll(".src.active").forEach((x) => x.classList.remove("active")); b.classList.add("active"); showEvidence(chunk, quote); });
+    return b;
   }
-  const status = (html) => { const el = $("#status"); el.hidden = !html; el.innerHTML = html || ""; };
-
-  function supersededNote(query, model) {
-    const all = search(query, { model, includeSuperseded: true, k: 5 });
-    const old = all.find((r) => docsById[r.chunk.doc].status === "superseded");
-    if (!old) return "";
-    const d = docsById[old.chunk.doc], nd = docsById[d.superseded_by];
-    return `<div class="note">This question also matches <span class="mono">P/N ${esc(d.part_number)} Rev ${esc(d.rev)}</span>, which is superseded by <span class="mono">Rev ${esc(nd.rev)}</span>. The older revision was not used. <a href="#revisions">See what changed</a>.</div>`;
+  function scrollDown() { const m = $("#msgs"); m.scrollTop = m.scrollHeight; }
+  function addMe(text, imgUrl) {
+    const d = document.createElement("div"); d.className = "msg me";
+    d.innerHTML = `${esc(text || "")}${imgUrl ? `<img src="${imgUrl}" alt="Photo sent by technician">` : ""}`;
+    $("#msgs").appendChild(d); scrollDown();
   }
-
-  // ---------- feedback (per viewer, this browser only) ----------
-  const FB_KEY = "fsa-feedback";
-  const readFb = () => { try { return JSON.parse(localStorage.getItem(FB_KEY) || "{}"); } catch { return {}; } };
-  const writeFb = (o) => { try { localStorage.setItem(FB_KEY, JSON.stringify(o)); } catch {} };
-  function fbHtml(key) {
-    const v = readFb()[key];
-    return `<div class="fb" data-key="${esc(key)}"><button type="button" data-v="up" aria-pressed="${v === "up"}">Useful</button><button type="button" data-v="down" aria-pressed="${v === "down"}">Not useful</button></div>`;
+  function addAi() {
+    const d = document.createElement("div"); d.className = "msg ai";
+    d.innerHTML = `<div class="who">Assistant</div><div class="bubble"><span class="typing"><i></i><i></i><i></i></span><span class="small" data-stage></span></div>`;
+    $("#msgs").appendChild(d); scrollDown(); return d;
   }
-  document.addEventListener("click", (e) => {
-    const b = e.target.closest(".fb button"); if (!b) return;
-    const box = b.parentElement, fb = readFb();
-    fb[box.dataset.key] = b.dataset.v; writeFb(fb);
-    box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-  });
-
-  // ---------- the answer pipeline ----------
-  function promptFor(query, model, hits) {
-    const passages = hits.map((h, i) => {
-      const d = docsById[h.chunk.doc];
-      return `[P${i + 1}] ${d.title} (P/N ${d.part_number} Rev ${d.rev}, ${d.page_numbers === "printed" ? "page" : "PDF page"} ${h.chunk.page})\n${h.chunk.text}`;
-    }).join("\n\n---\n\n");
-    return `You support a field service technician repairing a ${model} hemodialysis machine. The technician reports:\n"${query}"\n\n` +
-      `Below are passages from the current revision of the manufacturer's documentation. Use ONLY these passages.\n\n${passages}\n\n` +
-      `Return 2 to 5 probable root causes, most likely first. For each: a short cause title, one or two sentences of reasoning that connects the symptom to the passage, ` +
-      `the passage label, and a quote copied EXACTLY (character for character, 1-3 lines) from that passage that supports it. ` +
-      `If the passages do not support any cause, decline instead. Never invent part numbers, values or steps that are not in the passages.\n\n` +
-      `Reply with only JSON: {"declined": false, "decline_reason": "", "causes": [{"cause": "...", "reasoning": "...", "passage": "P1", "quote": "..."}]}`;
+  const stage = (el, t) => { const s = el.querySelector("[data-stage]"); if (s) s.textContent = t; };
+  function welcome() {
+    $("#msgs").innerHTML = "";
+    const d = document.createElement("div"); d.className = "msg ai";
+    d.innerHTML = `<div class="who">Assistant</div><div class="bubble">Hi. Tell me what the machine is doing, or send a photo of the display. I'll work out the likely causes from the current manuals and past service cases, show you the exact page I'm relying on, and check each step with you as you fix it.</div>`;
+    $("#msgs").appendChild(d);
   }
 
-  async function answer(query, model, { render = true, signal } = {}) {
-    const t0 = performance.now();
-    const hits = search(query, { model, k: 8 });
-    const out = { query, model, hits, causes: [], declined: false, reason: "", mode: sample ? "claude" : "search" };
-    if (!hits.length || hits[0].score < MIN_SCORE) {
-      out.declined = true; out.reason = "No passage in the current documents matches this description closely enough.";
-    } else if (sample) {
-      const res = sample.remote ? await sample.ask(query, model, hits, signal) : await sample.json(promptFor(query, model, hits), { signal, modelTier: "default" });
-      if (res && res.declined) { out.declined = true; out.reason = String(res.decline_reason || "The passages do not support a cause."); }
-      for (const c of (res && Array.isArray(res.causes) ? res.causes : []).slice(0, 5)) {
-        const i = parseInt(String(c.passage || "").replace(/\D/g, ""), 10) - 1;
-        const hit = hits[i]; if (!hit) continue;
-        const quote = String(c.quote || "");
-        const verified = quote.length > 8 && norm(hit.chunk.text).includes(norm(quote));
-        out.causes.push({ cause: String(c.cause || ""), reasoning: String(c.reasoning || ""), chunk: hit.chunk, quote, verified });
+  // ---------- evidence viewer ----------
+  let pdfCache = {};
+  async function showEvidence(chunk, quote) {
+    const d = docsById[chunk.doc];
+    $("#evEmpty").hidden = true; $("#evFull").hidden = false;
+    $("#evTitle").textContent = d.title;
+    $("#evMeta").innerHTML = `<dt>File</dt><dd>${esc(d.file)}</dd><dt>Document</dt><dd>P/N ${esc(d.part_number)} · Rev ${esc(d.rev)}</dd>` +
+      `<dt>Status</dt><dd><span class="status-ok">Current revision</span></dd><dt>Page</dt><dd>${d.page_numbers === "printed" ? "printed page" : "PDF page"} ${chunk.page}</dd>` +
+      `<dt>Passage</dt><dd>${esc(chunk.id)}</dd>`;
+    const body = $("#evBody");
+    if (window.innerWidth <= 900) $("#evidence").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (d.file.toLowerCase().endsWith(".pdf") && window.pdfjsLib) {
+      body.innerHTML = `<div class="small">Loading page…</div>`;
+      try {
+        pdfCache[d.file] = pdfCache[d.file] || pdfjsLib.getDocument("pdfs/" + encodeURIComponent(d.file)).promise;
+        const pdf = await pdfCache[d.file];
+        const page = await pdf.getPage(chunk.page);
+        const width = Math.min(body.clientWidth - 2, 760);
+        const base = page.getViewport({ scale: 1 });
+        const scale = (width / base.width) * (window.devicePixelRatio || 1);
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement("canvas"); canvas.width = vp.width; canvas.height = vp.height;
+        canvas.style.width = width + "px";
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+        const found = quote ? await highlight(page, vp, canvas, quote) : false;
+        body.innerHTML = "";
+        const box = document.createElement("div"); box.className = "pdfbox"; box.appendChild(canvas); body.appendChild(box);
+        const n = document.createElement("p"); n.className = "small";
+        n.innerHTML = found ? "Highlighted: the exact lines the answer quotes." : "The quoted lines are on this page.";
+        n.innerHTML += ` <a href="pdfs/${encodeURIComponent(d.file)}#page=${chunk.page}" target="_blank" rel="noopener">Open the PDF at this page</a>`;
+        body.appendChild(n);
+        if (found) { const y = found * (width / vp.width); body.scrollTop = Math.max(0, y - 120); $("#evidence").scrollTop = Math.max(0, y - 60); }
+        return;
+      } catch (e) { console.warn(e); }
+    }
+    // text-only source (2008K2 manual supplied as text): show the passage with the quote marked
+    const t = chunk.text;
+    let html = esc(t);
+    if (quote) {
+      const i = locate(t, quote);
+      if (i) html = esc(t.slice(0, i[0])) + "<mark>" + esc(t.slice(i[0], i[1])) + "</mark>" + esc(t.slice(i[1]));
+    }
+    body.innerHTML = `<div class="ev-text">${html}</div><p class="small">This manual was supplied as extracted text, so the passage is shown as text. ${d.source_url ? `<a href="${esc(d.source_url)}" target="_blank" rel="noopener">Original PDF on fmcna.com</a>` : ""}</p>`;
+  }
+  // find quote in text ignoring whitespace differences; returns [start, end] in original text
+  function locate(text, quote) {
+    const map = [], squash = [];
+    for (let i = 0; i < text.length; i++) if (!/\s/.test(text[i])) { map.push(i); squash.push(text[i].toLowerCase()); }
+    const s = squash.join(""), q = quote.replace(/\s+/g, "").toLowerCase();
+    if (!q) return null;
+    let at = s.indexOf(q), len = q.length;
+    if (at < 0) { const head = q.slice(0, Math.min(40, q.length)); at = s.indexOf(head); len = head.length; }
+    if (at < 0) return null;
+    return [map[at], map[at + len - 1] + 1];
+  }
+  async function highlight(page, vp, canvas, quote) {
+    const tc = await page.getTextContent();
+    const map = []; let s = "";
+    tc.items.forEach((it, idx) => { for (const ch of it.str) if (!/\s/.test(ch)) { s += ch.toLowerCase(); map.push(idx); } });
+    const q = quote.replace(/\s+/g, "").toLowerCase();
+    let at = s.indexOf(q), len = q.length;
+    if (at < 0) { const head = q.slice(0, Math.min(40, q.length)); at = s.indexOf(head); len = head.length; }
+    if (at < 0) return false;
+    const items = new Set(map.slice(at, at + len));
+    const ctx = canvas.getContext("2d"); ctx.save(); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hl").trim() || "rgba(255,213,0,.4)";
+    let top = Infinity;
+    for (const idx of items) {
+      const it = tc.items[idx];
+      const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
+      const h = Math.hypot(tx[2], tx[3]), w = it.width * vp.scale;
+      const x = tx[4], y = tx[5] - h;
+      ctx.fillRect(x - 2, y - 2, w + 4, h + 5);
+      top = Math.min(top, y);
+    }
+    ctx.restore();
+    return top === Infinity ? false : Math.max(1, top);
+  }
+
+  // ---------- image handling ----------
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const max = 1400, s = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const dataUrl = c.toDataURL("image/jpeg", 0.85);
+        resolve({ media_type: "image/jpeg", data: dataUrl.split(",")[1], url: dataUrl, name: file.name || "photo.jpg" });
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = reject; img.src = url;
+    });
+  }
+  function sampleDisplay() {
+    // A simulated blood pump module display, labelled as simulated, for trying the photo flow without a machine.
+    const c = document.createElement("canvas"); c.width = 900; c.height = 600; const g = c.getContext("2d");
+    g.fillStyle = "#3b4146"; g.fillRect(0, 0, 900, 600);
+    g.fillStyle = "#2a2f33"; g.fillRect(60, 60, 780, 420);
+    g.fillStyle = "#111"; g.fillRect(140, 120, 620, 200);
+    g.fillStyle = "#ff3b2f"; g.font = "bold 150px monospace"; g.textAlign = "center"; g.fillText("A.11", 450, 275);
+    g.fillStyle = "#d9d9d9"; g.font = "28px sans-serif"; g.fillText("ARTERIAL BLOOD PUMP", 450, 380);
+    g.font = "24px sans-serif"; g.fillText("SET 300 ml/min", 450, 425);
+    g.fillStyle = "#ffcc00"; g.font = "20px sans-serif"; g.fillText("Simulated display for demo", 450, 560);
+    const dataUrl = c.toDataURL("image/jpeg", 0.9);
+    return { media_type: "image/jpeg", data: dataUrl.split(",")[1], url: dataUrl, name: "simulated-display.jpg" };
+  }
+  function setAttach(a) {
+    pending = a;
+    $("#attach").hidden = !a;
+    if (a) { $("#attachImg").src = a.url; $("#attachName").textContent = a.name; }
+  }
+
+  // ---------- the turn ----------
+  async function ask(text, image) {
+    if (busy) return; busy = true; $("#send").disabled = true;
+    const model = $("#model").value;
+    addMe(text, image && image.url);
+    convo.push({ role: "user", text, image: !!image });
+    const el = addAi();
+    try {
+      let observation = "", searchText = text;
+      if (image && claudeOn()) {
+        stage(el, "Looking at your photo…");
+        const seen = await call({ action: "read_image", model, image: { media_type: image.media_type, data: image.data }, note: text });
+        observation = seen.shows_machine ? `${seen.description}${seen.alarm_or_code ? ` (display shows ${seen.alarm_or_code})` : ""}` : "";
+        searchText = [text, seen.alarm_or_code, seen.search_text].filter(Boolean).join(" ");
+        if (!seen.shows_machine) observation = "";
+        el._seen = seen;
+      } else if (image) {
+        searchText = text;
       }
-      // A cause we cannot trace to its passage is not shown as an answer.
-      out.unverified = out.causes.filter((c) => !c.verified).length;
-      out.causes = out.causes.filter((c) => c.verified);
-      if (!out.causes.length && !out.declined) { out.declined = true; out.reason = "Claude's suggestions could not be traced to an exact passage, so none are shown."; }
-    }
-    out.ms = performance.now() - t0;
-    if (render) renderAnswer(out);
-    return out;
-  }
-
-  function renderAnswer(out) {
-    const terms = tokenize(out.query), r = $("#results"), key = norm(out.model + " " + out.query);
-    let html = supersededNote(out.query, out.model);
-    if (out.declined) {
-      html += `<div class="note decline"><strong>No confident answer.</strong> ${esc(out.reason)} This is logged as a decline rather than guessed.</div>`;
-    } else if (out.mode === "claude") {
-      html += out.causes.map((c, i) => `<article class="panel cause"><div class="rank">${i + 1}</div><div style="min-width:0">
-        <h3>${esc(c.cause)}</h3><p>${esc(c.reasoning)}</p>
-        <blockquote>${markQuote(c.chunk.text, c.quote)}</blockquote>${citeHtml(c.chunk)}${fbHtml(key + "#" + i)}</div></article>`).join("");
-      if (out.unverified) html += `<p class="mode">${out.unverified} suggestion${out.unverified > 1 ? "s were" : " was"} dropped because the quote did not match the source text exactly.</p>`;
-    } else {
-      html += `<p class="mode">Search-only mode: the most relevant passages from current revisions, ranked. ${upsell()}</p>`;
-      html += out.hits.slice(0, 4).map((h, i) => `<article class="panel cause"><div class="rank">${i + 1}</div><div style="min-width:0">
-        <h3>${esc(docsById[h.chunk.doc].title)}</h3><blockquote>${highlight(h.chunk.text, terms)}</blockquote>${citeHtml(h.chunk)}${fbHtml(key + "#" + i)}</div></article>`).join("");
-    }
-    r.innerHTML = html;
-    status(`<span>Answered in ${(out.ms / 1000).toFixed(1)} s</span><span>${out.hits.length} passages searched in depth from ${index.N} indexed</span><span>Only current revisions used</span>`);
-  }
-
-  // ---------- views ----------
-  function renderLibrary() {
-    const rows = corpus.documents.map((d) => `<tr><td>${esc(d.title)}<div class="mode">${esc(d.manufacturer)}${d.firmware ? " · " + esc(d.firmware) : ""}</div></td>
-      <td class="mono">${esc(d.part_number)}</td><td class="mono">${esc(d.rev)}</td><td>${esc(d.models.join(", "))}</td>
-      <td class="num">${d.pages}</td><td class="num">${d.chunks}</td>
-      <td><span class="pill ${d.status}">${d.status === "current" ? "Current" : "Superseded by Rev " + esc(docsById[d.superseded_by].rev)}</span></td>
-      <td>${d.source_url ? `<a href="${esc(d.source_url)}" target="_blank" rel="noopener">Source</a>` : ""}</td></tr>`).join("");
-    $("#libTable").innerHTML = `<thead><tr><th>Document</th><th>P/N</th><th>Rev</th><th>Machine</th><th class="num">Pages</th><th class="num">Passages</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody>`;
-  }
-  function renderRevisions() {
-    if (!corpus.revisions.length) { $("#revList").innerHTML = `<div class="panel empty">No document in the library has more than one revision loaded.</div>`; return; }
-    $("#revList").innerHTML = corpus.revisions.map((r) => {
-      const a = docsById[r.from], b = docsById[r.to];
-      const lines = [...r.removed.map((l) => `<span class="del">− ${esc(l)}</span>`), ...r.added.map((l) => `<span class="add">+ ${esc(l)}</span>`)].join("");
-      return `<div class="panel"><label class="lbl">P/N ${esc(r.part_number)} · ${esc(a.title)}</label>
-        <p style="margin:0 0 10px"><span class="mono">Rev ${esc(a.rev)}</span> <span class="pill superseded">Superseded</span> → <span class="mono">Rev ${esc(b.rev)}</span> <span class="pill current">Current</span>.
-        ${r.removed.length + r.added.length} changed lines. A reviewer approves this diff instead of re-reading the manual.</p>
-        <pre class="diff">${lines || "No text changes detected."}</pre></div>`;
-    }).join("");
-  }
-
-  // ---------- test set ----------
-  // A scenario passes on its expected doc/pages, or on any "also" doc/pages (the same procedure written up in another manual).
-  const isExpected = (chunk, s) => [{ doc: s.expect_doc, pages: s.expect_pages }, ...(s.also || [])].some((e) => chunk.doc === e.doc && (!e.pages || e.pages.includes(chunk.page)));
-  const hitAt = (hits, s, k) => hits.slice(0, k).some((h) => isExpected(h.chunk, s));
-  let evalRows = [];
-  function renderEval() {
-    if (!scenarios.length) { $("#metrics").innerHTML = `<p class="empty">No test scenarios loaded yet.</p>`; $("#runEval").hidden = true; $("#evalTable").innerHTML = ""; return; }
-    const n = evalRows.length, pct = (x) => n ? Math.round(100 * x / n) : 0;
-    const top3 = pct(evalRows.filter((r) => r.retrieval).length);
-    const ran = evalRows.filter((r) => r.claude);
-    const cited = ran.length ? Math.round(100 * ran.filter((r) => r.claude.causes.length && r.claude.causes.every((c) => docsById[c.chunk.doc].status === "current")).length / ran.length) : null;
-    const top1 = ran.length ? Math.round(100 * ran.filter((r) => r.claude.causes[0] && isExpected(r.claude.causes[0].chunk, r.s)).length / ran.length) : null;
-    const declined = ran.filter((r) => r.claude.declined).length;
-    const lat = ran.length ? ran.reduce((a, r) => a + r.claude.ms, 0) / ran.length / 1000 : null;
-    const m = (k, v, t, good) => `<div class="metric panel"><div class="k">${k}</div><div class="v ${good === undefined ? "" : good ? "good" : "bad"}">${v}</div><div class="t">${t}</div></div>`;
-    $("#metrics").innerHTML =
-      m("Right passage in top 3 (search)", top3 + "%", `${n} scenarios · computed on load`, top3 >= 70) +
-      m("Top cause cites the right passage", top1 === null ? "–" : top1 + "%", "Target: above 70%", top1 === null ? undefined : top1 > 70) +
-      m("Answers citing current revision", cited === null ? "–" : cited + "%", "Target: above 95%", cited === null ? undefined : cited > 95) +
-      m("Time to probable cause", lat === null ? "–" : lat.toFixed(1) + " s", "Target: under 30 s", lat === null ? undefined : lat < 30) +
-      m("Declined", ran.length ? `${declined} of ${ran.length}` : "–", "Tracked, not targeted");
-    $("#evalTable").innerHTML = `<thead><tr><th>Scenario</th><th>Source</th><th>Expected</th><th>Search top 3</th><th>Claude top cause</th></tr></thead><tbody>` +
-      evalRows.map((r) => `<tr><td>${esc(r.s.query)}</td><td class="mode">${esc(r.s.origin || "")}</td><td class="mono">${esc(r.s.expect_doc)} p.${esc((r.s.expect_pages || []).join(","))}${(r.s.also || []).map((e) => `<br>${esc(e.doc)} p.${esc((e.pages || []).join(","))}`).join("")}</td>
-        <td>${r.retrieval ? '<span class="pill current">Found</span>' : '<span class="pill unverified">Missed</span>'}</td>
-        <td>${r.claude ? (r.claude.declined ? '<span class="pill superseded">Declined</span>' : r.claude.causes[0] ? esc(r.claude.causes[0].cause) + ` <span class="mono">${esc(r.claude.causes[0].chunk.doc)} p.${r.claude.causes[0].chunk.page}</span>` : "–") : '<span class="mode">not run</span>'}</td></tr>`).join("") + "</tbody>";
-  }
-  $("#runEval").addEventListener("click", async () => {
-    const btn = $("#runEval"); btn.disabled = true;
-    for (let i = 0; i < evalRows.length; i++) {
-      $("#evalNote").textContent = `Running ${i + 1} of ${evalRows.length}…`;
-      try { evalRows[i].claude = await answer(evalRows[i].s.query, evalRows[i].s.model, { render: false }); }
-      catch (e) {
-        if (["not_granted", "sampling_disabled", "rate_limited", "session_expired"].includes(e && e.code)) { $("#evalNote").textContent = "Claude is not available for this view, so the run stopped."; break; }
+      // follow-ups: carry the earlier question so retrieval keeps context
+      const prevUser = convo.filter((c) => c.role === "user").slice(-2, -1).map((c) => c.searchText || c.text).join(" ");
+      convo[convo.length - 1].searchText = searchText;
+      stage(el, "Searching the current manuals and past cases…");
+      const keepDoc = (c) => { const d = docsById[c.doc]; return d.status === "current" && d.models.includes(model); };
+      let hits = search(manualIdx, searchText, keepDoc, 6);
+      if ((!hits.length || hits[0].score < MIN_SCORE) && prevUser) hits = search(manualIdx, prevUser + " " + searchText, keepDoc, 6);
+      const caseHits = search(caseIdx, searchText + " " + prevUser, (c) => c.machine === model, 4).filter((h) => h.score >= CASE_MIN);
+      const mem = memory().filter((m) => m.machine === model);
+      const memHits = mem.length ? search(buildIndex(mem, (m) => `${m.question} ${m.observation || ""} ${m.fixed_by} ${m.note}`), searchText, null, 2).filter((h) => h.score >= 4) : [];
+      if (!hits.length || hits[0].score < MIN_SCORE) {
+        renderDecline(el, image && !observation && claudeOn() ? "I couldn't match that photo to anything in the manuals. Could you describe the alarm or symptom in words?" : "Nothing in the current manuals matches that closely enough, so I'd rather not guess. Could you add the alarm code or what the machine displays?", el._seen);
+        convo.push({ role: "assistant", text: "No confident match in the current manuals." });
+        return;
       }
-      renderEval();
-    }
-    if ($("#evalNote").textContent.startsWith("Running")) $("#evalNote").textContent = "Done.";
-    btn.disabled = false;
-  });
-
-  // ---------- tabs ----------
-  const TABS = ["ask", "library", "revisions", "testset"];
-  function show(tab) {
-    if (!TABS.includes(tab)) tab = "ask";
-    document.querySelectorAll("[data-view]").forEach((s) => (s.hidden = s.dataset.view !== tab));
-    document.querySelectorAll("nav a").forEach((a) => a.setAttribute("aria-current", a.dataset.tab === tab ? "page" : "false"));
+      if (!claudeOn()) { renderSearchOnly(el, hits, caseHits); convo.push({ role: "assistant", text: "Showed the closest manual passages." }); return; }
+      stage(el, `Reasoning over ${hits.length} manual passages${caseHits.length ? `, ${caseHits.length} past cases` : ""}${memHits.length ? ` and ${memHits.length} from team memory` : ""}…`);
+      const history = convo.slice(0, -1).map((c) => ({ role: c.role, text: c.text })).slice(-6);
+      const t0 = performance.now();
+      const res = await call({
+        action: "diagnose", model, query: text || searchText, observation,
+        ids: hits.map((h) => h.it.id), case_ids: caseHits.map((h) => h.it.id),
+        memory: memHits.map((h) => ({ id: h.it.id, machine: h.it.machine, question: h.it.question, fixed_by: h.it.fixed_by, note: h.it.note })),
+        history, image: image ? { media_type: image.media_type, data: image.data } : undefined,
+      });
+      const ms = performance.now() - t0;
+      const turn = { hits: hits.map((h) => h.it), cases: caseHits.map((h) => h.it), mem: memHits.map((h) => h.it), res, ms, seen: el._seen, question: text || searchText, model };
+      renderAnswer(el, turn);
+      convo.push({ role: "assistant", text: res.reply || "", turn });
+    } catch (err) {
+      const c = err && err.code;
+      el.querySelector(".bubble").innerHTML = c === "not_granted" ? "That access code wasn't accepted. Enter it at the top to turn Claude on." :
+        c === "rate_limited" ? "Too many requests just now. Give it a few seconds and try again." :
+        c === "refused" ? "I can't help with that request." : "Something went wrong reaching Claude. Please try again.";
+    } finally { busy = false; $("#send").disabled = false; scrollDown(); }
   }
-  document.querySelector("nav").addEventListener("click", (e) => { const a = e.target.closest("a"); if (!a) return; e.preventDefault(); show(a.dataset.tab); try { history.replaceState(null, "", "#" + a.dataset.tab); } catch {} });
-  addEventListener("hashchange", () => show(location.hash.slice(1)));
-  document.addEventListener("click", (e) => { const a = e.target.closest('a[href="#revisions"]'); if (a && !a.closest("nav")) { e.preventDefault(); show("revisions"); } });
 
-  // ---------- ask form ----------
-  $("#keyGo").addEventListener("click", () => {
-    const code = $("#key").value.trim(); if (!code) return;
-    store(KEY, code); sample = remoteSample(code); $("#key").value = ""; setMode();
-  });
-  $("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#keyGo").click(); } });
+  const resolveRef = (ref, list, prefix) => { const i = parseInt(String(ref || "").replace(/\D/g, ""), 10) - 1; return String(ref || "").trim().toUpperCase().startsWith(prefix) ? list[i] : undefined; };
+  const verified = (chunk, quote) => chunk && quote && quote.length > 8 && norm(chunk.text).includes(norm(quote));
 
-  $("#askForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const q = $("#q").value.trim(), model = $("#model").value; if (!q) return;
-    ctl = new AbortController(); $("#go").disabled = true; $("#stop").hidden = !sample;
-    $("#results").innerHTML = ""; status(sample ? "<span>Searching the manuals and asking Claude… usually 10 to 30 s</span>" : "");
-    try { await answer(q, model, { signal: ctl.signal }); }
-    catch (err) {
-      const code = err && err.code;
-      if (code === "not_granted" || code === "sampling_disabled") {
-        const wasRemote = sample && sample.remote; sample = null; setMode(); await answer(q, model);
-        if (wasRemote) status("<span>That access code was not accepted, so these are search results only.</span>");
-      }
-      else if (code !== "cancelled") status(`<span>Claude could not answer this time (${esc(code || "error")}). Try again.</span>`);
-      else status("");
+  function renderDecline(el, msg, seen) {
+    el.querySelector(".bubble").innerHTML = `${seen && seen.description ? `<div class="small">I can see: ${esc(seen.description)}</div>` : ""}${esc(msg)}`;
+  }
+  function renderSearchOnly(el, hits, caseHits) {
+    const b = el.querySelector(".bubble");
+    b.innerHTML = `Here are the closest passages in the current manuals. ${remote ? "Enter the access code at the top and I'll reason over them, combine them with past cases and walk you through the fix." : ""}`;
+    for (const h of hits.slice(0, 3)) {
+      const box = document.createElement("div"); box.className = "cause";
+      box.innerHTML = `<div class="quote">${esc(h.it.text.slice(0, 420))}${h.it.text.length > 420 ? "…" : ""}</div>`;
+      box.appendChild(srcButton(h.it, null));
+      b.appendChild(box);
     }
-    finally { $("#go").disabled = false; $("#stop").hidden = true; }
-  });
-  $("#stop").addEventListener("click", () => ctl && ctl.abort());
-  $("#examples").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; $("#q").value = c.dataset.q; $("#model").value = c.dataset.m; $("#askForm").requestSubmit(); });
+    if (caseHits.length) { const p = document.createElement("div"); p.className = "hist"; p.innerHTML = `<b>Similar past cases:</b> ${caseHits.map((h) => `<span class="chip" data-case="${esc(h.it.id)}">${esc(h.it.id)}</span>`).join("")}`; b.appendChild(p); }
+    wireCaseChips(b);
+    showEvidence(hits[0].it, null);
+  }
 
-  // ---------- hosted mode: Claude via this site's /api/ask, unlocked by an access code ----------
-  let remote = false; // true when the server has a Claude API key configured
-  const KEY = "fsa-access-code";
-  const upsell = () => remote ? "Enter the access code to get ranked causes with reasoning." : "Open this page in Claude to get ranked causes with reasoning.";
-  const store = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-  const stored = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-  function remoteSample(code) {
-    return {
-      remote: true,
-      async ask(query, model, hits, signal) {
-        let r;
+  function renderAnswer(el, turn) {
+    const { res, hits, cases, mem } = turn;
+    const b = el.querySelector(".bubble"); b.innerHTML = "";
+    if (turn.seen && turn.seen.shows_machine) {
+      const s = document.createElement("div"); s.className = "small"; s.style.marginBottom = "6px";
+      s.textContent = `From your photo: ${turn.seen.description}${turn.seen.alarm_or_code ? ` · display shows ${turn.seen.alarm_or_code}` : ""}`;
+      b.appendChild(s);
+    }
+    const p = document.createElement("div"); p.textContent = res.declined ? (res.decline_reason || "The documents don't cover this.") : res.reply; b.appendChild(p);
+    const causes = []; let dropped = 0;
+    for (const c of (res.causes || [])) {
+      const chunk = resolveRef(c.source, hits, "P");
+      if (!verified(chunk, c.quote)) { dropped++; continue; }
+      causes.push({ ...c, chunk });
+    }
+    turn.causes = causes;
+    causes.forEach((c, i) => {
+      const box = document.createElement("div"); box.className = "cause";
+      box.innerHTML = `<h4><span>${i + 1}. ${esc(c.cause)}</span><span class="lk ${esc(c.likelihood)}">${esc(c.likelihood)} likelihood</span></h4><div>${esc(c.reasoning)}</div><div class="quote">${esc(c.quote)}</div>`;
+      box.appendChild(srcButton(c.chunk, c.quote));
+      const refs = (c.history || []).map((r) => resolveRef(r, cases, "C") || resolveRef(r, mem, "M")).filter(Boolean);
+      if (refs.length || (c.history_note && c.history && c.history.length)) {
+        const h = document.createElement("div"); h.className = "hist";
+        h.innerHTML = `<b>Field history:</b> ${esc(c.history_note || "")}<div>${refs.map((r) => r.created ? `<span class="chip mem" data-mem="${esc(r.id)}">From team memory · ${esc(r.id)}</span>` : `<span class="chip" data-case="${esc(r.id)}">${esc(r.id)} · ${esc(r.date)}</span>`).join("")}</div>`;
+        box.appendChild(h);
+      }
+      b.appendChild(box);
+    });
+    if (dropped) { const d = document.createElement("div"); d.className = "small"; d.style.marginTop = "6px"; d.textContent = `${dropped} suggestion${dropped > 1 ? "s were" : " was"} dropped because the quote did not match the manual exactly.`; b.appendChild(d); }
+    if (res.follow_up_question) { const q = document.createElement("div"); q.style.marginTop = "8px"; q.innerHTML = `<b>Question:</b> ${esc(res.follow_up_question)}`; b.appendChild(q); }
+    const meta = document.createElement("div"); meta.className = "small"; meta.style.marginTop = "8px";
+    const files = [...new Set(causes.map((c) => { const d = docsById[c.chunk.doc]; return `${d.file} (Rev ${d.rev})`; }))];
+    meta.textContent = `Answered in ${(turn.ms / 1000).toFixed(1)} s · sources: ${files.join(", ") || "none"}${cases.length ? ` · ${cases.length} past cases considered` : ""}${mem.length ? ` · ${mem.length} from team memory` : ""} · current revisions only`;
+    b.appendChild(meta);
+    wireCaseChips(b);
+    // guided fix
+    const steps = (res.steps || []).map((s) => ({ ...s, chunk: resolveRef(s.source, hits, "P") })).filter((s) => s.chunk && s.instruction);
+    turn.steps = steps; turn.stepResults = {};
+    if (causes.length) {
+      const acts = document.createElement("div"); acts.className = "actions";
+      if (steps.length) { const g = document.createElement("button"); g.className = "btn primary"; g.type = "button"; g.textContent = `Start guided fix · ${steps.length} steps`; g.onclick = () => { g.remove(); renderSteps(b, turn); }; acts.appendChild(g); }
+      const cl = document.createElement("button"); cl.className = "btn"; cl.type = "button"; cl.textContent = "Close case"; cl.onclick = () => { cl.disabled = true; renderClose(b, turn); };
+      acts.appendChild(cl); b.appendChild(acts);
+      showEvidence(causes[0].chunk, causes[0].quote);
+      el.querySelector(".src")?.classList.add("active");
+    }
+  }
+
+  function renderSteps(b, turn) {
+    const wrap = document.createElement("div"); wrap.className = "steps";
+    wrap.innerHTML = `<div class="small">Do each step and tell me what you see or measure (a photo works too). I'll check it against the manual.</div>`;
+    turn.steps.forEach((s, i) => {
+      const st = document.createElement("div"); st.className = "step";
+      st.innerHTML = `<div><span class="n">${i + 1}</span>${esc(s.instruction)}</div>${s.check ? `<div class="check">Check: ${esc(s.check)}</div>` : ""}`;
+      st.appendChild(srcButton(s.chunk, verified(s.chunk, s.quote) ? s.quote : null));
+      const vin = document.createElement("div"); vin.className = "vin";
+      vin.innerHTML = `<input type="text" placeholder="What did you see or measure?" aria-label="Result for step ${i + 1}"><input type="file" accept="image/*" capture="environment" hidden><button class="btn" type="button" data-ph>Photo</button><button class="btn primary" type="button" data-go>Verify with AI</button>`;
+      st.appendChild(vin);
+      const out = document.createElement("div"); st.appendChild(out);
+      let img = null;
+      const file = vin.querySelector("input[type=file]");
+      vin.querySelector("[data-ph]").onclick = () => file.click();
+      file.onchange = async () => { if (file.files[0]) { img = await readImage(file.files[0]); vin.querySelector("[data-ph]").textContent = "Photo ✓"; } };
+      vin.querySelector("[data-go]").onclick = async () => {
+        const note = vin.querySelector("input[type=text]").value.trim();
+        if (!note && !img) { out.innerHTML = `<div class="verdict needs_more">Add a reading, an observation or a photo first.</div>`; return; }
+        if (!claudeOn()) { out.innerHTML = `<div class="verdict needs_more">Enter the access code at the top to have Claude check this step.</div>`; return; }
+        const btn = vin.querySelector("[data-go]"); btn.disabled = true; btn.textContent = "Checking…";
         try {
-          r = await fetch("api/ask", { method: "POST", signal, headers: { "content-type": "application/json", "x-access-code": code },
-            body: JSON.stringify({ query, model, ids: hits.map((h) => h.chunk.id) }) });
-        } catch (e) { throw Object.assign(new Error("network"), { code: e && e.name === "AbortError" ? "cancelled" : "network_error" }); }
-        if (r.status === 401) { store(KEY, null); throw Object.assign(new Error("bad code"), { code: "not_granted" }); }
-        if (r.status === 429) throw Object.assign(new Error("busy"), { code: "rate_limited" });
-        if (!r.ok) throw Object.assign(new Error("server"), { code: "server_error" });
-        return r.json();
-      },
+          const ids = [s.chunk.id];
+          const v = await call({ action: "verify", model: turn.model, step: { instruction: s.instruction, check: s.check }, ids, note, image: img ? { media_type: img.media_type, data: img.data } : undefined });
+          const ok = verified(s.chunk, v.quote);
+          out.innerHTML = `<div class="verdict ${esc(v.verdict)}"><b>${v.verdict === "needs_more" ? "Need more" : esc(v.verdict)}</b> · ${esc(v.explanation)}${ok ? `<div class="quote">${esc(v.quote)}</div>` : ""}</div>`;
+          turn.stepResults[i] = { instruction: s.instruction, reported: note, photo: !!img, verdict: v.verdict, explanation: v.explanation };
+        } catch (e) { out.innerHTML = `<div class="verdict needs_more">Couldn't reach Claude. Try again.</div>`; }
+        finally { btn.disabled = false; btn.textContent = "Verify again"; }
+      };
+      wrap.appendChild(st);
+    });
+    b.appendChild(wrap); scrollDown();
+  }
+
+  function renderClose(b, turn) {
+    const box = document.createElement("div"); box.className = "closebox";
+    box.innerHTML = `<b>Close the case and save it to team memory</b>
+      <label class="small" style="display:block;margin-top:6px">What fixed it?</label>
+      <select>${turn.causes.map((c) => `<option>${esc(c.cause)}</option>`).join("")}<option>Something else</option></select>
+      <input type="text" placeholder="Note for the next technician (optional)">
+      <div class="actions"><button class="btn primary" type="button">Save to memory</button></div>`;
+    box.querySelector("button").onclick = () => {
+      const fixed = box.querySelector("select").value, note = box.querySelector("input").value.trim();
+      const rec = caseRecord(turn, fixed, note);
+      const all = memory(); all.unshift(rec); store(MEMKEY, all.slice(0, 50));
+      box.innerHTML = `<b>Saved as ${esc(rec.id)}.</b> The next technician who asks something similar about a ${esc(rec.machine)} will see it. <a href="#memory" data-go-mem>See how it was stored</a>`;
+      box.querySelector("[data-go-mem]").onclick = (e) => { e.preventDefault(); show("memory"); };
+      renderMemory(); toast("Case saved to team memory");
+    };
+    b.appendChild(box); scrollDown();
+  }
+  function caseRecord(turn, fixed, note) {
+    const id = "MEM-" + new Date().toISOString().slice(2, 10).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+    const src = (ch) => { const d = docsById[ch.doc]; return { file: d.file, part_number: d.part_number, rev: d.rev, page: ch.page, passage: ch.id }; };
+    return {
+      id, created: new Date().toISOString(), machine: turn.model, question: turn.question,
+      photo_attached: !!turn.seen, observation: turn.seen && turn.seen.shows_machine ? turn.seen.description : "",
+      suggested_causes: turn.causes.map((c) => ({ cause: c.cause, likelihood: c.likelihood, source: src(c.chunk) })),
+      past_cases_used: turn.cases.map((c) => c.id), memory_used: turn.mem.map((m) => m.id),
+      steps: Object.values(turn.stepResults), fixed_by: fixed, note,
+      documents_used: [...new Map(turn.causes.map((c) => { const s = src(c.chunk); return [s.file, { file: s.file, part_number: s.part_number, rev: s.rev }]; })).values()],
     };
   }
-  async function detectRemote() {
-    try { const r = await fetch("api/ask", { method: "GET" }); remote = r.ok && !!(await r.json()).enabled; } catch { remote = false; }
-    if (!remote) return null;
-    const fromUrl = new URLSearchParams(location.search).get("key");
-    if (fromUrl) { store(KEY, fromUrl); history.replaceState(null, "", location.pathname + location.hash); }
-    const code = fromUrl || stored(KEY);
-    return code ? remoteSample(code) : null;
-  }
 
-  function setMode() {
-    const txt = sample ? "Claude reasoning on · answers must quote the source exactly" : "Search-only mode";
-    $("#mode").textContent = `${corpus.documents.length} documents · ${index.N} passages`;
-    $("#askMode").textContent = txt;
-    $("#runEval").disabled = !sample; $("#evalNote").textContent = sample ? "" : upsell().replace("get ranked causes", "run the test set");
-    $("#keyBox").hidden = !(remote && !sample);
+  // ---------- other tabs ----------
+  function wireCaseChips(root) {
+    root.querySelectorAll("[data-case]").forEach((ch) => ch.onclick = () => showCase(caseById[ch.dataset.case]));
+    root.querySelectorAll("[data-mem]").forEach((ch) => ch.onclick = () => { show("memory"); });
   }
+  function showCase(c) {
+    if (!c) return;
+    $("#evEmpty").hidden = true; $("#evFull").hidden = false;
+    $("#evTitle").textContent = `Past case ${c.id}`;
+    $("#evMeta").innerHTML = `<dt>Date</dt><dd>${esc(c.date)}</dd><dt>Site</dt><dd>${esc(c.site)}</dd><dt>Machine</dt><dd>${esc(c.machine)} · ${esc(c.serial)}</dd><dt>Data</dt><dd>synthetic demo record</dd>`;
+    $("#evBody").innerHTML = `<table><tr><th>Symptom</th><td>${esc(c.symptom)}</td></tr><tr><th>Root cause</th><td>${esc(c.root_cause)}</td></tr><tr><th>Fix</th><td>${esc(c.fix)}</td></tr><tr><th>Parts</th><td>${esc(c.parts.join(", ") || "none")}</td></tr><tr><th>On site</th><td>${c.minutes_on_site} min · first-time fix ${c.first_time_fix ? "yes" : "no"}</td></tr><tr><th>Manual refs</th><td class="mono">${c.manual_refs.map((r) => { const d = docsById[r.doc]; return d ? `${esc(d.file)} p.${r.page}` : esc(r.doc); }).join("<br>")}</td></tr></table>`;
+    if (window.innerWidth <= 900) $("#evidence").scrollIntoView({ behavior: "smooth" });
+  }
+  function renderLibrary() {
+    $("#libTable").innerHTML = `<thead><tr><th>Document</th><th>File</th><th>P/N</th><th>Rev</th><th>Models</th><th>Pages</th><th>Status</th></tr></thead><tbody>` +
+      corpus.documents.map((d) => `<tr><td>${esc(d.title)}</td><td class="mono">${esc(d.file)}</td><td class="mono">${esc(d.part_number)}</td><td class="mono">${esc(d.rev)}</td><td>${esc(d.models.join(", "))}</td><td>${d.pages}</td><td>${d.status === "current" ? '<span class="status-ok">Current</span>' : "Superseded"}</td></tr>`).join("") + "</tbody>";
+  }
+  function renderCases() {
+    $("#casesTable").innerHTML = `<thead><tr><th>Case</th><th>Machine</th><th>Symptom</th><th>Root cause</th><th>Fix</th><th>First-time fix</th></tr></thead><tbody>` +
+      pastCases.map((c) => `<tr><td class="mono">${esc(c.id)}<div class="small">${esc(c.date)}</div></td><td>${esc(c.machine)}</td><td>${esc(c.symptom)}</td><td>${esc(c.root_cause)}</td><td>${esc(c.fix)}</td><td>${c.first_time_fix ? "Yes" : "No"}</td></tr>`).join("") + "</tbody>";
+  }
+  function renderMemory() {
+    const all = memory();
+    $("#memList").innerHTML = all.length ? all.map((m) => `<div class="cause"><h4><span class="mono">${esc(m.id)}</span><span class="small">${esc(new Date(m.created).toLocaleString())} · ${esc(m.machine)}</span></h4>
+      <div><b>Question:</b> ${esc(m.question)}</div><div><b>Fixed by:</b> ${esc(m.fixed_by)}${m.note ? ` · ${esc(m.note)}` : ""}</div>
+      <div class="small">Documents: ${m.documents_used.map((d) => `${esc(d.file)} (Rev ${esc(d.rev)})`).join(", ")} · ${m.steps.length} verified step${m.steps.length === 1 ? "" : "s"} · past cases used: ${esc(m.past_cases_used.join(", ") || "none")}</div>
+      <details style="margin-top:6px"><summary class="small">Stored record (JSON)</summary><pre class="json">${esc(JSON.stringify(m, null, 2))}</pre></details></div>`).join("")
+      : `<div class="empty">No cases saved yet. Ask a question in the Assistant, then press <b>Close case</b> to save it here.</div>`;
+  }
+  $("#memClear").onclick = () => { store(MEMKEY, null); renderMemory(); toast("Memory cleared"); };
+  function show(tab) {
+    document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+    for (const t of ["assistant", "library", "cases", "memory"]) $("#tab-" + t).hidden = t !== tab;
+    if (tab === "memory") renderMemory();
+  }
+  document.querySelectorAll("nav button").forEach((b) => b.onclick = () => show(b.dataset.tab));
+
+  // ---------- composer ----------
+  const EXAMPLES = [
+    { q: "Blood pump shows A.11 again. We already replaced the rotor Hall sensor last month.", m: "2008T", star: true, label: "Manual + past cases: A.11 came back after a Hall sensor swap" },
+    { q: "", m: "2008T", photo: true, label: "Send a photo of the display (simulated)" },
+    { q: "Machine shows No Water message during prime and the heater turns off", m: "2008T" },
+    { q: "E.07 on the blood pump after power on", m: "2008T" },
+    { q: "2008K2 shows Air Detector Alarm, venous chamber looks about three quarters full", m: "2008K2" },
+  ];
+  function renderExamples() {
+    $("#examples").innerHTML = EXAMPLES.map((e, i) => `<button type="button" data-i="${i}" class="${e.star ? "star" : ""}">${esc(e.label || e.q)}</button>`).join("");
+    $("#examples").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      const e = EXAMPLES[+b.dataset.i]; $("#model").value = e.m;
+      if (e.photo) { ask("What's wrong with this pump?", sampleDisplay()); } else ask(e.q, null);
+    });
+  }
+  $("#form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = $("#q").value.trim(); if (!t && !pending) return;
+    const img = pending; setAttach(null); $("#q").value = ""; autosize();
+    ask(t || "What's wrong here?", img);
+  });
+  const autosize = () => { const q = $("#q"); q.style.height = "auto"; q.style.height = Math.min(140, q.scrollHeight) + "px"; };
+  $("#q").addEventListener("input", autosize);
+  $("#q").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#form").requestSubmit(); } });
+  $("#photoBtn").onclick = () => $("#file").click();
+  $("#file").onchange = async () => { const f = $("#file").files[0]; if (f) setAttach(await readImage(f)); $("#file").value = ""; };
+  $("#attachRemove").onclick = () => setAttach(null);
+  $("#newChat").onclick = () => { convo = []; welcome(); $("#evEmpty").hidden = false; $("#evFull").hidden = true; };
+  $("#keyGo").onclick = () => { const v = $("#key").value.trim(); if (!v) return; code = v; store(CODEKEY, v); $("#key").value = ""; setMode(); toast("Claude is on"); };
+  $("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#keyGo").click(); } });
 
   // ---------- boot ----------
   (async () => {
     try {
-      corpus = await (await fetch("corpus.json")).json();
-    } catch {
-      $("#mode").textContent = "Library not loaded"; $("#results").innerHTML = `<div class="note">The document library could not be loaded.</div>`; return;
-    }
-    try { scenarios = (await (await fetch("scenarios.json")).json()).scenarios || []; } catch { scenarios = []; }
+      [corpus, pastCases] = await Promise.all([fetch("corpus.json").then((r) => r.json()), fetch("past_cases.json").then((r) => r.json()).then((j) => j.cases)]);
+    } catch { $("#modePill").textContent = "Library not loaded"; return; }
     for (const d of corpus.documents) docsById[d.id] = d;
-    index = buildIndex(corpus.chunks);
+    for (const c of corpus.chunks) chunkById[c.id] = c;
+    for (const c of pastCases) caseById[c.id] = c;
+    manualIdx = buildIndex(corpus.chunks, (c) => c.text);
+    caseIdx = buildIndex(pastCases, (c) => `${c.alarm} ${c.symptom} ${c.root_cause} ${c.fix}`);
     const models = [...new Set(corpus.documents.flatMap((d) => d.models))];
     $("#model").innerHTML = models.map((m) => `<option>${esc(m)}</option>`).join("");
-    $("#examples").innerHTML = scenarios.filter((s) => s.example).slice(0, 5).map((s) => `<button type="button" class="chip" data-q="${esc(s.query)}" data-m="${esc(s.model)}">${esc(s.query.length > 60 ? s.query.slice(0, 57) + "…" : s.query)}</button>`).join("");
-    evalRows = scenarios.map((s) => ({ s, retrieval: hitAt(search(s.query, { model: s.model, k: 3 }), s, 3) }));
-    renderLibrary(); renderRevisions(); renderEval();
-    show(location.hash.slice(1));
+    $("#libLine").textContent = `${corpus.documents.length} documents · ${corpus.chunks.length} passages · ${pastCases.length} past cases`;
+    renderLibrary(); renderCases(); renderExamples(); welcome();
+    const fromUrl = new URLSearchParams(location.search).get("key");
+    if (fromUrl) { store(CODEKEY, fromUrl); history.replaceState(null, "", location.pathname + location.hash); }
+    code = fromUrl || stored(CODEKEY);
+    try { const r = await fetch("api/ask"); remote = r.ok && !!(await r.json()).enabled; } catch { remote = false; }
     setMode();
-    sample = window.claude ? await claude.use("sample") : await detectRemote();
-    setMode();
+    if (location.hash === "#memory") show("memory");
   })();
 })();
 </script>
+</body>
+</html>
