@@ -599,6 +599,8 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
           const ids = [s.chunk.id];
           const v = await call({ action: "verify", model: turn.model, step: { instruction: s.instruction, check: s.check }, ids, note, image: img ? { media_type: img.media_type, data: img.data } : undefined });
           const ok = verified(s.chunk, v.quote);
+          const pd = docsById[s.chunk.doc], pref = `${pd.file} p.${s.chunk.page}`;
+          v.explanation = String(v.explanation || "").replace(/\[?\bP1\b\]?/g, pref);
           out.innerHTML = `<div class="verdict ${esc(v.verdict)}"><b>${v.verdict === "needs_more" ? "Need more" : esc(v.verdict)}</b> · ${esc(v.explanation)}${ok ? `<div class="quote">${esc(v.quote)}</div>` : ""}</div>`;
           turn.stepResults[i] = { instruction: s.instruction, reported: note, photo: !!img, verdict: v.verdict, explanation: v.explanation };
         } catch (e) { out.innerHTML = `<div class="verdict needs_more">Couldn't reach Claude. Try again.</div>`; }
