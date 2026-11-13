@@ -1,0 +1,59 @@
+{
+  "_note": "Synthetic service tickets written for this demo. Sites and serial numbers match the synthetic past cases; none are real Fresenius records.",
+  "tickets": [
+    {
+      "id": "SR-26-1184", "priority": "High", "opened": "2026-11-13T08:12:00", "site": "Clinic 03 (North West)", "contact": "Charge nurse, Unit B",
+      "summary": "Blood pump A.11 is back after the Hall sensor swap",
+      "reported": "Blood pump shows A.11 again. We already replaced the rotor Hall sensor last month.",
+      "reported_station": "Station 4", "alarm": "A.11", "photo_demo": true,
+      "machines": [
+        { "serial": "8T-DEMO-1042", "model": "2008T", "station": "Station 2", "installed": "2019", "last_pm": "2026-05-14" },
+        { "serial": "8T-DEMO-1187", "model": "2008T", "station": "Station 4", "installed": "2020", "last_pm": "2026-06-02" },
+        { "serial": "8T-DEMO-1203", "model": "2008T", "station": "Station 6", "installed": "2021", "last_pm": "2026-06-02" }
+      ]
+    },
+    {
+      "id": "SR-26-1190", "priority": "Medium", "opened": "2026-11-13T07:40:00", "site": "Clinic 09 (Scotland)", "contact": "Unit manager",
+      "summary": "No Water during prime, heater turns off",
+      "reported": "Machine shows No Water message during prime and the heater turns off",
+      "reported_station": "Station 1", "alarm": "No Water",
+      "machines": [
+        { "serial": "8T-DEMO-4120", "model": "2008T", "station": "Station 1", "installed": "2018", "last_pm": "2026-03-21" },
+        { "serial": "8T-DEMO-4122", "model": "2008T", "station": "Station 2", "installed": "2018", "last_pm": "2026-03-21" },
+        { "serial": "8T-DEMO-4125", "model": "2008T", "station": "Station 3", "installed": "2022", "last_pm": "2026-03-22" }
+      ]
+    },
+    {
+      "id": "SR-26-1193", "priority": "Medium", "opened": "2026-11-12T16:05:00", "site": "Clinic 02 (London)", "contact": "Biomed lead",
+      "summary": "E.07 on the blood pump at power on",
+      "reported": "E.07 on the blood pump after power on",
+      "reported_station": "Station 5", "alarm": "E.07",
+      "machines": [
+        { "serial": "8T-DEMO-0954", "model": "2008T", "station": "Station 5", "installed": "2017", "last_pm": "2026-01-30" },
+        { "serial": "8T-DEMO-0960", "model": "2008T", "station": "Station 6", "installed": "2017", "last_pm": "2026-01-30" },
+        { "serial": "K2-DEMO-0144", "model": "2008K2", "station": "Station 8", "installed": "2023", "last_pm": "2026-04-11" }
+      ]
+    },
+    {
+      "id": "SR-26-1197", "priority": "High", "opened": "2026-11-13T09:02:00", "site": "Clinic 06 (Wales)", "contact": "Charge nurse",
+      "summary": "2008K2 Air Detector Alarm with chamber three quarters full",
+      "reported": "2008K2 shows Air Detector Alarm, venous chamber looks about three quarters full",
+      "reported_station": "Station 3", "alarm": "Air Detector Alarm",
+      "machines": [
+        { "serial": "K2-DEMO-0301", "model": "2008K2", "station": "Station 3", "installed": "2022", "last_pm": "2026-02-17" },
+        { "serial": "K2-DEMO-0305", "model": "2008K2", "station": "Station 4", "installed": "2022", "last_pm": "2026-02-17" },
+        { "serial": "8T-DEMO-5011", "model": "2008T", "station": "Station 1", "installed": "2019", "last_pm": "2026-02-16" }
+      ]
+    },
+    {
+      "id": "SR-26-1201", "priority": "Planned", "opened": "2026-11-10T10:00:00", "site": "Clinic 04 (East)", "contact": "Unit manager",
+      "summary": "Annual preventive maintenance due",
+      "reported": "Annual preventive maintenance is due. What do I need to check and record?",
+      "reported_station": "Station 2", "alarm": "",
+      "machines": [
+        { "serial": "8T-DEMO-2298", "model": "2008T", "station": "Station 2", "installed": "2019", "last_pm": "2025-11-12" },
+        { "serial": "8T-DEMO-2301", "model": "2008T", "station": "Station 3", "installed": "2019", "last_pm": "2025-11-12" }
+      ]
+    }
+  ]
+}

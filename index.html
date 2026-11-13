@@ -73,6 +73,21 @@ select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; b
 .chip { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); margin: 2px 4px 0 0; cursor: pointer; background: var(--panel) }
 .chip:hover { border-color: var(--accent) }
 .chip.mem { border-color: var(--ok); color: var(--ok) }
+.chat-top select { width: 100%; min-width: 0; text-overflow: ellipsis }
+.grid > *, .chat, .msgs, .msg { min-width: 0 }
+.pick { min-width: 0; overflow-wrap: anywhere }
+.chat-top .field { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 200px }
+.picks { display: grid; gap: 8px; margin-top: 8px }
+.pick { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 9px 12px; cursor: pointer; display: grid; gap: 2px }
+.pick:hover { border-color: var(--accent) }
+.pick .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px }
+.pick .id { font: 500 13px var(--f-mono) }
+.pri { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent) }
+.pri.High { background: var(--bad-soft); color: var(--bad) } .pri.Medium { background: var(--warn-soft); color: var(--warn) }
+.jobcard { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); margin-top: 8px; font-size: 13.5px }
+.jobcard dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 6px 0 0 }
+.jobcard dt { color: var(--muted) } .jobcard dd { margin: 0 }
+.steplbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 4px }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px }
 .btn { border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; border-radius: 8px; cursor: pointer }
 .btn:hover { border-color: var(--accent) }
@@ -162,10 +177,11 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
     <div class="grid">
       <div class="panel chat">
         <div class="chat-top">
-          <label for="model">Machine</label>
-          <select id="model"></select>
-          <span class="small" id="libLine"></span>
-          <button class="btn" id="newChat" type="button" style="margin-left:auto">New case</button>
+          <div class="field"><label for="ticket">1 · Service ticket</label><select id="ticket"><option value="">Choose a ticket…</option></select></div>
+          <div class="field"><label for="machine">2 · Machine</label><select id="machine" disabled><option value="">Choose the ticket first</option></select></div>
+          <select id="model" hidden aria-hidden="true"></select>
+          <button class="btn" id="newChat" type="button" style="align-self:flex-end">New case</button>
+          <span class="small" id="libLine" style="flex-basis:100%"></span>
         </div>
         <div class="msgs" id="msgs" aria-live="polite"></div>
         <div class="composer">
@@ -206,7 +222,7 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
   </div></section>
 
   <section id="tab-cases" hidden><div class="panel pad">
-    <div class="banner"><b>Synthetic data.</b> These 18 service cases were written for this demo to show how field history combines with the manuals. They are not real Fresenius records.</div>
+    <div class="banner"><b>Synthetic data.</b> These 18 service cases were written for this demo to show how field history combines with the manuals. The service tickets, sites and machine serial numbers on the Assistant tab are synthetic too. None are real Fresenius records.</div>
     <div class="tablewrap"><table id="casesTable"></table></div>
   </div></section>
 
@@ -223,7 +239,7 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
     <div class="actions"><button class="btn" id="memClear" type="button">Clear memory</button></div>
   </div></section>
 
-  <footer>Demo only. Source documents are public FMCNA publications, used here to illustrate the approach; they are not modified. Past cases are synthetic. Answers propose and cite; the technician decides.</footer>
+  <footer>Demo only. Source documents are public FMCNA publications, used here to illustrate the approach; they are not modified. Tickets, machines and past cases are synthetic. Answers propose and cite; the technician decides.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -328,12 +344,55 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
     $("#msgs").appendChild(d); scrollDown(); return d;
   }
   const stage = (el, t) => { const s = el.querySelector("[data-stage]"); if (s) s.textContent = t; };
-  function welcome() {
-    $("#msgs").innerHTML = "";
-    const d = document.createElement("div"); d.className = "msg ai";
-    d.innerHTML = `<div class="who">Assistant</div><div class="bubble">Hi. Tell me what the machine is doing, or send a photo of the display. I'll work out the likely causes from the current manuals and past service cases, show you the exact page I'm relying on, and check each step with you as you fix it.</div>`;
-    $("#msgs").appendChild(d);
+  // ---------- job: ticket, then machine ----------
+  let tickets = [], job = { ticket: null, machine: null };
+  const fmtOpened = (t) => new Date(t).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  function aiMsg(html) { const d = document.createElement("div"); d.className = "msg ai"; d.innerHTML = `<div class="who">Assistant</div><div class="bubble">${html}</div>`; $("#msgs").appendChild(d); scrollDown(); return d; }
+  function lockComposer() {
+    const ready = !!(job.ticket && job.machine);
+    $("#q").disabled = !ready; $("#send").disabled = !ready || busy; $("#photoBtn").disabled = !ready;
+    $("#q").placeholder = ready ? "Describe the symptom or alarm, or attach a photo of the display…" : "Choose a service ticket and the machine first";
+    $("#examples").hidden = !ready;
   }
+  function welcome() {
+    $("#msgs").innerHTML = ""; convo = [];
+    job = { ticket: null, machine: null };
+    $("#ticket").value = ""; fillMachines(); lockComposer();
+    const d = aiMsg(`Hi. Start by choosing the service ticket you're working on. You can also use the drop-downs above.<div class="picks">${tickets.map((t) => `<button type="button" class="pick" data-t="${esc(t.id)}"><span class="top"><span class="id">${esc(t.id)}</span><span class="pri ${esc(t.priority)}">${esc(t.priority)}</span><span class="small">${esc(t.site)} · opened ${esc(fmtOpened(t.opened))}</span></span><span>${esc(t.summary)}</span></button>`).join("")}</div>`);
+    d.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { $("#ticket").value = b.dataset.t; pickTicket(); });
+  }
+  function fillMachines() {
+    const t = job.ticket, m = $("#machine");
+    m.disabled = !t;
+    m.innerHTML = t ? `<option value="">Choose the machine…</option>` + t.machines.map((x) => `<option value="${esc(x.serial)}">${esc(x.station)} · ${esc(x.model)} · ${esc(x.serial)}</option>`).join("") : `<option value="">Choose the ticket first</option>`;
+  }
+  function pickTicket() {
+    const t = tickets.find((x) => x.id === $("#ticket").value);
+    if (!t) { welcome(); return; }
+    // a new ticket starts a fresh conversation
+    $("#msgs").innerHTML = ""; convo = []; $("#evEmpty").hidden = false; $("#evFull").hidden = true;
+    job = { ticket: t, machine: null }; fillMachines(); lockComposer();
+    const hist = (serial) => pastCases.filter((c) => c.serial === serial).length;
+    const d = aiMsg(`<b>${esc(t.id)}</b> · ${esc(t.summary)}
+      <div class="jobcard"><dl><dt>Site</dt><dd>${esc(t.site)}</dd><dt>Priority</dt><dd>${esc(t.priority)}</dd><dt>Opened</dt><dd>${esc(fmtOpened(t.opened))} by ${esc(t.contact)}</dd><dt>Reported</dt><dd>"${esc(t.reported)}"</dd><dt>Where</dt><dd>${esc(t.reported_station)}</dd></dl></div>
+      <div style="margin-top:8px">Now choose the machine you're standing at.</div>
+      <div class="picks">${t.machines.map((x) => `<button type="button" class="pick" data-m="${esc(x.serial)}"><span class="top"><span class="id">${esc(x.serial)}</span><span class="small">${esc(x.station)} · ${esc(x.model)}${x.station === t.reported_station ? " · reported on this station" : ""}${hist(x.serial) ? ` · ${hist(x.serial)} past case${hist(x.serial) > 1 ? "s" : ""}` : ""}</span></span></button>`).join("")}</div>`);
+    d.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => { $("#machine").value = b.dataset.m; pickMachine(); });
+  }
+  function pickMachine() {
+    const t = job.ticket, x = t && t.machines.find((m) => m.serial === $("#machine").value);
+    if (!x) { job.machine = null; lockComposer(); return; }
+    job.machine = x; $("#model").value = x.model; lockComposer();
+    const own = pastCases.filter((c) => c.serial === x.serial);
+    const d = aiMsg(`Working on <b>${esc(x.model)} ${esc(x.serial)}</b> (${esc(x.station)}, installed ${esc(x.installed)}, last PM ${esc(x.last_pm)}).
+      ${own.length ? `<div class="hist"><b>This machine's history:</b> ${own.map((c) => `<span class="chip" data-case="${esc(c.id)}">${esc(c.id)} · ${esc(c.alarm || c.symptom.slice(0, 30))} · ${esc(c.date)}</span>`).join("")}</div>` : `<div class="small" style="margin-top:6px">No earlier service cases on this serial.</div>`}
+      <div style="margin-top:8px">I'll use the current ${esc(x.model)} manuals and past cases. Start with the reported problem, describe what you see, or send a photo of the display.</div>`);
+    wireCaseChips(d);
+    renderExamples();
+    $("#q").focus();
+  }
+  $("#ticket").onchange = pickTicket;
+  $("#machine").onchange = pickMachine;
 
   // ---------- evidence viewer ----------
   let pdfCache = {};
@@ -449,7 +508,7 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
 
   // ---------- the turn ----------
   async function ask(text, image) {
-    if (busy) return; busy = true; $("#send").disabled = true;
+    if (busy || !job.machine) return; busy = true; $("#send").disabled = true;
     const model = $("#model").value;
     addMe(text, image && image.url);
     convo.push({ role: "user", text, image: !!image });
@@ -633,6 +692,7 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
     const src = (ch) => { const d = docsById[ch.doc]; return { file: d.file, part_number: d.part_number, rev: d.rev, page: ch.page, passage: ch.id }; };
     return {
       id, created: new Date().toISOString(), machine: turn.model, question: turn.question,
+      ticket: job.ticket ? job.ticket.id : "", site: job.ticket ? job.ticket.site : "", serial: job.machine ? job.machine.serial : "", station: job.machine ? job.machine.station : "",
       photo_attached: !!turn.seen, observation: turn.seen && turn.seen.shows_machine ? turn.seen.description : "",
       suggested_causes: turn.causes.map((c) => ({ cause: c.cause, likelihood: c.likelihood, source: src(c.chunk) })),
       past_cases_used: turn.cases.map((c) => c.id), memory_used: turn.mem.map((m) => m.id),
@@ -664,7 +724,7 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
   }
   function renderMemory() {
     const all = memory();
-    $("#memList").innerHTML = all.length ? all.map((m) => `<div class="cause"><h4><span class="mono">${esc(m.id)}</span><span class="small">${esc(new Date(m.created).toLocaleString())} · ${esc(m.machine)}</span></h4>
+    $("#memList").innerHTML = all.length ? all.map((m) => `<div class="cause"><h4><span class="mono">${esc(m.id)}</span><span class="small">${esc(new Date(m.created).toLocaleString())} · ${m.ticket ? esc(m.ticket) + " · " : ""}${esc(m.machine)}${m.serial ? " " + esc(m.serial) : ""}</span></h4>
       <div><b>Question:</b> ${esc(m.question)}</div><div><b>Fixed by:</b> ${esc(m.fixed_by)}${m.note ? ` · ${esc(m.note)}` : ""}</div>
       <div class="small">Documents: ${m.documents_used.map((d) => `${esc(d.file)} (Rev ${esc(d.rev)})`).join(", ")} · ${m.steps.length} verified step${m.steps.length === 1 ? "" : "s"} · past cases used: ${esc(m.past_cases_used.join(", ") || "none")}</div>
       <details style="margin-top:6px"><summary class="small">Stored record (JSON)</summary><pre class="json">${esc(JSON.stringify(m, null, 2))}</pre></details></div>`).join("")
@@ -679,18 +739,14 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
   document.querySelectorAll("nav button").forEach((b) => b.onclick = () => show(b.dataset.tab));
 
   // ---------- composer ----------
-  const EXAMPLES = [
-    { q: "Blood pump shows A.11 again. We already replaced the rotor Hall sensor last month.", m: "2008T", star: true, label: "Manual + past cases: A.11 came back after a Hall sensor swap" },
-    { q: "", m: "2008T", photo: true, label: "Send a photo of the display (simulated)" },
-    { q: "Machine shows No Water message during prime and the heater turns off", m: "2008T" },
-    { q: "E.07 on the blood pump after power on", m: "2008T" },
-    { q: "2008K2 shows Air Detector Alarm, venous chamber looks about three quarters full", m: "2008K2" },
-  ];
   function renderExamples() {
-    $("#examples").innerHTML = EXAMPLES.map((e, i) => `<button type="button" data-i="${i}" class="${e.star ? "star" : ""}">${esc(e.label || e.q)}</button>`).join("");
+    const t = job.ticket; if (!t) { $("#examples").innerHTML = ""; return; }
+    const ex = [{ q: t.reported, star: true, label: `Ask about the reported problem: "${t.summary}"` }];
+    if (t.photo_demo) ex.push({ photo: true, label: "Send a photo of the display (simulated)" });
+    $("#examples").innerHTML = ex.map((e, i) => `<button type="button" data-i="${i}" class="${e.star ? "star" : ""}">${esc(e.label)}</button>`).join("");
     $("#examples").querySelectorAll("button").forEach((b) => b.onclick = () => {
-      const e = EXAMPLES[+b.dataset.i]; $("#model").value = e.m;
-      if (e.photo) { ask("What's wrong with this pump?", sampleDisplay()); } else ask(e.q, null);
+      const e = ex[+b.dataset.i];
+      if (e.photo) ask("What's wrong with this pump?", sampleDisplay()); else ask(e.q, null);
     });
   }
   $("#form").addEventListener("submit", (e) => {
@@ -705,14 +761,14 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
   $("#photoBtn").onclick = () => $("#file").click();
   $("#file").onchange = async () => { const f = $("#file").files[0]; if (f) setAttach(await readImage(f)); $("#file").value = ""; };
   $("#attachRemove").onclick = () => setAttach(null);
-  $("#newChat").onclick = () => { convo = []; welcome(); $("#evEmpty").hidden = false; $("#evFull").hidden = true; };
+  $("#newChat").onclick = () => { welcome(); $("#evEmpty").hidden = false; $("#evFull").hidden = true; };
   $("#keyGo").onclick = () => { const v = $("#key").value.trim(); if (!v) return; code = v; store(CODEKEY, v); $("#key").value = ""; setMode(); toast("Claude is on"); };
   $("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#keyGo").click(); } });
 
   // ---------- boot ----------
   (async () => {
     try {
-      [corpus, pastCases] = await Promise.all([fetch("corpus.json").then((r) => r.json()), fetch("past_cases.json").then((r) => r.json()).then((j) => j.cases)]);
+      [corpus, pastCases, tickets] = await Promise.all([fetch("corpus.json").then((r) => r.json()), fetch("past_cases.json").then((r) => r.json()).then((j) => j.cases), fetch("tickets.json").then((r) => r.json()).then((j) => j.tickets)]);
     } catch { $("#modePill").textContent = "Library not loaded"; return; }
     for (const d of corpus.documents) docsById[d.id] = d;
     for (const c of corpus.chunks) chunkById[c.id] = c;
@@ -722,7 +778,8 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
     const models = [...new Set(corpus.documents.flatMap((d) => d.models))];
     $("#model").innerHTML = models.map((m) => `<option>${esc(m)}</option>`).join("");
     $("#libLine").textContent = `${corpus.documents.length} documents · ${corpus.chunks.length} passages · ${pastCases.length} past cases`;
-    renderLibrary(); renderCases(); renderExamples(); welcome();
+    $("#ticket").innerHTML = `<option value="">Choose a ticket…</option>` + tickets.map((t) => `<option value="${esc(t.id)}">${esc(t.id)} · ${esc(t.priority)} · ${esc(t.summary)}</option>`).join("");
+    renderLibrary(); renderCases(); welcome();
     const fromUrl = new URLSearchParams(location.search).get("key");
     if (fromUrl) { store(CODEKEY, fromUrl); history.replaceState(null, "", location.pathname + location.hash); }
     code = fromUrl || stored(CODEKEY);
