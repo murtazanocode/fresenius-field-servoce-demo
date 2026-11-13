@@ -525,6 +525,10 @@ footer { margin: 16px 0 4px; font-size: 12px; color: var(--muted) }
 
   function renderAnswer(el, turn) {
     const { res, hits, cases, mem } = turn;
+    // The model cites evidence by prompt label (C2, M1); show the real case ids instead.
+    const relabel = (t) => String(t || "").replace(/\[?\b([CM])(\d{1,2})\b\]?/g, (m, k, n) => { const r = (k === "C" ? cases : mem)[+n - 1]; return r ? r.id : m; });
+    res.reply = relabel(res.reply); res.follow_up_question = relabel(res.follow_up_question);
+    (res.causes || []).forEach((c) => { c.history_note = relabel(c.history_note); c.reasoning = relabel(c.reasoning); });
     const b = el.querySelector(".bubble"); b.innerHTML = "";
     if (turn.seen && turn.seen.shows_machine) {
       const s = document.createElement("div"); s.className = "small"; s.style.marginBottom = "6px";
